@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFont
 start_time = time.time()
 
 # Scan the image and output an image showing the selection of data containing elements (non-white space)
-def scan_image_to_csv(image_path, output_csv, output_image):
+def image_scanner(image_path, output_csv, output_image):
     img = Image.open(image_path).convert("RGB")
     width, height = img.size
     draw = ImageDraw.Draw(img)
@@ -59,7 +59,7 @@ def scan_image_to_csv(image_path, output_csv, output_image):
 
             
     # Go through all the chunks of data and determine if the gap between them is within a certain threshold
-    threshold = 18  
+    threshold = 0  
     chunk_start = 0 # Flag to determine whether a line needs to be drawn at the start of a chunk
     for i in range(1, len(chunk_of_data)):
         prev_data_start, prev_data_end = chunk_of_data[i - 1]
@@ -88,16 +88,17 @@ def scan_image_to_csv(image_path, output_csv, output_image):
         if i == len(chunk_of_data) - 1:
             draw.line((0, curr_data_end + 1, width, curr_data_end + 1), fill=(128, 0, 128))
             # If threshold gap is still too large from previous data chunk, draw a line at the start of the last data chunk
-            draw.line((0, curr_data_start - 1, width, curr_data_start - 1), fill=(128, 0, 128))
+            if (chunk_start == 0):    
+                draw.line((0, curr_data_start - 1, width, curr_data_start - 1), fill=(128, 0, 128))
     
     # Export the image with the lines drawn
     img.save(output_image)
 
 # Output a CSV file with pixel values and an image with coordinates
-scan_image_to_csv(
+image_scanner(
     r"C:\Users\jovan\OneDrive\Desktop\CS499\CleanDocumentFirstPage.png",
     r"C:\Users\jovan\OneDrive\Desktop\CS499\output.csv",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\output_image.png"
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\output_image.jpg"
 )
 
 # Performance Monitoring
