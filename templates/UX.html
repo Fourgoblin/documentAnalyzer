@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Document Analyzer</title>
+    <script type="text/javascript" src="{{ url_for('static',filename='boxes.js') }}"></script>
+    <link rel="stylesheet" href="../static/resizeStyle.css">
+</head>
+<body onload="makeResizableDiv('.resizable')">
+    <div style="display: flex; flex-direction: row; align-items: center; justify-content: center;">
+        <img src="{{ url_for('static',filename='CleanDocumentFirstPage.png') }}" width="700" height="1000">
+        <div class='resizable'>
+            <div class='resizers'>
+              <div class='resizer top-left'></div>
+              <div class='resizer top-right'></div>
+              <div class='resizer bottom-left'></div>
+              <div class='resizer bottom-right'></div>
+            </div>
+          </div>
+    </div>
+</body>
+</html>
