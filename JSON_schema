@@ -1,5 +1,5 @@
 {
-    "document_png": "base64",
+    "document_png": "base64", // We will still need some way to get the original png into the browser app. Still unsure if this is the best way to do it at the moment
     "document_sections": [
     {
       "section_id": "section_1",
