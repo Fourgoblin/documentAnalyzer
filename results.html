@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h2 class="center">Text Extraction Results</h2>
+    <div class="container">
+        {% for i in range(num_pages) %}
+            <div class="card page-{{ (i % 4) + 1 }}">
+                <h3>Page {{ i+1 }}</h3>
+                <img src="{{ url_for('get_highlighted_image', pdf_name=pdf_name, page=i+1) }}" alt="Highlighted Image Page {{ i+1 }}">
+                <h4>Extracted JSON Data</h4>
+                <iframe class="json-container" src="{{ url_for('get_json_data', pdf_name=pdf_name, page=i+1) }}"></iframe>
+                <div class="download-buttons">
+                    <a href="{{ url_for('get_highlighted_image', pdf_name=pdf_name, page=i+1) }}" download="highlighted_image_page_{{ i+1 }}.png">Download Image</a>
+                    <a href="{{ url_for('get_json_data', pdf_name=pdf_name, page=i+1) }}" download="text_extraction_page_{{ i+1 }}.json">Download JSON</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
