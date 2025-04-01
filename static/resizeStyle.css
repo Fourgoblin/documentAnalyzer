@@ -10,6 +10,12 @@ html {
   top: 100px;
   left: 100px;
 }
+.resizable2 {
+  position: absolute;
+  top: 400px;
+  left: 400px;
+  
+}
 
 .resizable .resizers{
   width: 100%;

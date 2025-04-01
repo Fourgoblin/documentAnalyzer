@@ -1,7 +1,9 @@
-/*Make resizable div by Hung Nguyen*/
 function makeResizableDiv(div) {
-  const element = document.querySelector(div);
-  const resizers = document.querySelectorAll(div + ' .resizer')
+  const elements = document.querySelectorAll(div); //this may need to no longer be constant so that it may be selected in resize function
+  elements.forEach(element => {
+    
+  
+  const resizers = element.querySelectorAll(div + ' .resizer')
   const minimum_size = 20;
   let original_width = 0;
   let original_height = 0;
@@ -9,8 +11,9 @@ function makeResizableDiv(div) {
   let original_y = 0;
   let original_mouse_x = 0;
   let original_mouse_y = 0;
-  for (let i = 0;i < resizers.length; i++) {
-    const currentResizer = resizers[i];
+
+   resizers.forEach(resizer => {
+    const currentResizer = resizer;
     currentResizer.addEventListener('mousedown', function(e) {
       e.preventDefault()
       original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
@@ -22,6 +25,7 @@ function makeResizableDiv(div) {
       window.addEventListener('mousemove', resize)
       window.addEventListener('mouseup', stopResize)
     })
+  
     
     function resize(e) {
       if (currentResizer.classList.contains('bottom-right')) {
@@ -73,7 +77,8 @@ function makeResizableDiv(div) {
     function stopResize() {
       window.removeEventListener('mousemove', resize)
     }
-  }
+  });
+});
 }
 
 makeResizableDiv('.resizable')
