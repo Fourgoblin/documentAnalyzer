@@ -1,5 +1,5 @@
 function makeResizableDiv(div) {
-  const elements = document.querySelectorAll(div); //this may need to no longer be constant so that it may be selected in resize function
+  const elements = document.querySelectorAll(div); 
   elements.forEach(element => {
     
   
@@ -18,8 +18,12 @@ function makeResizableDiv(div) {
       e.preventDefault()
       original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
       original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
+      parent_left = document.getElementById('image_holder').getBoundingClientRect().left;
       original_x = element.getBoundingClientRect().left;
+      original_x = parent_left - original_x; //relative to parent (image holder) now
+      parent_top = document.getElementById('image_holder').getBoundingClientRect().top;
       original_y = element.getBoundingClientRect().top;
+      original_y = parent_top - original_y; //also now relative to the image holder to prevent div offset from messing with box location
       original_mouse_x = e.pageX;
       original_mouse_y = e.pageY;
       window.addEventListener('mousemove', resize)
@@ -46,7 +50,7 @@ function makeResizableDiv(div) {
         }
         if (width > minimum_size) {
           element.style.width = width + 'px'
-          element.style.left = original_x + (e.pageX - original_mouse_x) + 'px' //this needs to subtract according to where the left actually starts
+          element.style.left = (-1*original_x) + (e.pageX - original_mouse_x) + 'px' //this needs to subtract according to where the left actually starts (working)
         }
       }
       else if (currentResizer.classList.contains('top-right')) {
@@ -57,7 +61,7 @@ function makeResizableDiv(div) {
         }
         if (height > minimum_size) {
           element.style.height = height + 'px'
-          element.style.top = original_y + (e.pageY - original_mouse_y) + 'px'
+          element.style.top = (-1*original_y) + (e.pageY - original_mouse_y) + 'px'
         }
       }
       else {
@@ -65,11 +69,11 @@ function makeResizableDiv(div) {
         const height = original_height - (e.pageY - original_mouse_y)
         if (width > minimum_size) {
           element.style.width = width + 'px'
-          element.style.left = original_x + (e.pageX - original_mouse_x) + 'px'
+          element.style.left = (-1*original_x) + (e.pageX - original_mouse_x) + 'px'
         }
         if (height > minimum_size) {
           element.style.height = height + 'px'
-          element.style.top = original_y + (e.pageY - original_mouse_y) + 'px'
+          element.style.top = (-1*original_y) + (e.pageY - original_mouse_y) + 'px'
         }
       }
     }
