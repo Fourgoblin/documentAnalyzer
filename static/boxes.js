@@ -46,7 +46,7 @@ function makeResizableDiv(div) {
         }
         if (width > minimum_size) {
           element.style.width = width + 'px'
-          element.style.left = original_x + (e.pageX - original_mouse_x) + 'px'
+          element.style.left = original_x + (e.pageX - original_mouse_x) + 'px' //this needs to subtract according to where the left actually starts
         }
       }
       else if (currentResizer.classList.contains('top-right')) {

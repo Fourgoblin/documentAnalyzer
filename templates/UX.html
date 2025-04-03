@@ -6,8 +6,9 @@
     <link rel="stylesheet" href="../static/resizeStyle.css">
 </head>
 <body onload="makeResizableDiv('.resizable')">
-    <div style="display: flex; flex-direction: row; align-items: center; justify-content: center;">
-        <img src="{{ url_for('static',filename='CleanDocumentFirstPage.png') }}" width="700" height="1000">
+    <div class="container">
+      <div id="image_holder" > 
+      <img src="{{ url_for('static',filename='CleanDocumentFirstPage.png') }}"  id="doc_image">
         <div class='resizable'>
             <div class='resizers'>
               <div class='resizer top-left'></div>
@@ -16,6 +17,7 @@
               <div class='resizer bottom-right'></div>
             </div>
         </div>
+      </div> 
         <div class='resizable resizable2'>
           <div class='resizers'>
             <div class='resizer top-left'></div>
