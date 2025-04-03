@@ -15,11 +15,13 @@ data = {
     }
 }
 
+
 # Euclidean distance between two RGB values
 def euclidean_distance(rgb1, rgb2):
     r1, g1, b1 = rgb1
     r2, g2, b2 = rgb2
     return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
+
 
 # Function to detect horizontal state changes
 def detect_state_changes(img, mode):
@@ -32,7 +34,8 @@ def detect_state_changes(img, mode):
     if mode == "horizontal":
         for y in range(height):
             # Determine the state
-            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < horizontal_threshold for x in range(width)):
+            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < horizontal_threshold for x in
+                   range(width)):
                 current_state = "whitespace"
             else:
                 current_state = "non-whitespace"
@@ -43,6 +46,7 @@ def detect_state_changes(img, mode):
                 state_changes.append((y, previous_state, current_state))
             previous_state = current_state
     return state_changes
+
 
 # Function to detect vertical state changes
 def detect_vertical_state_changes(img, data_chunks):
@@ -56,7 +60,8 @@ def detect_vertical_state_changes(img, data_chunks):
         previous_state = None
         for x in range(width):
             # Check if all pixels in the column (x) are similar within this chunk
-            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0,y))) < vertical_threshold for y in range(y1, y2)):
+            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < vertical_threshold for y in
+                   range(y1, y2)):
                 current_state = "whitespace"
             else:
                 current_state = "non-whitespace"
@@ -80,7 +85,7 @@ def state_change_analysis(state_changes):
         pos, prev_state, current_state = state_changes[i]
         # Start of data chunk
         if i == 0 and prev_state == "non-whitespace":
-           y1 = 0
+            y1 = 0
         if prev_state == "whitespace" and current_state == "non-whitespace":
             y1 = pos
         # End of data chunk
@@ -89,12 +94,13 @@ def state_change_analysis(state_changes):
         # Store chunk of data if both start and end are found
         if y1 is not None and y2 is not None:
             data_height = y2 - y1
-            if data_height > 1: # Ignore single lines (likely a crease in the paper)
+            if data_height > 1:  # Ignore single lines (likely a crease in the paper)
                 chunk_of_data.append([y1, y2])
             y1 = None
             y2 = None
 
     return chunk_of_data
+
 
 # Go through the state changes to determine the relevant chunks of data (vertical)
 def vertical_state_change_analysis(state_changes):
@@ -106,7 +112,7 @@ def vertical_state_change_analysis(state_changes):
         x, y1, y2, prev_state, current_state = state_changes[i]
         # Start of data chunk
         if i == 0 and prev_state == "non-whitespace":
-           x1 = 0
+            x1 = 0
         if prev_state == "whitespace" and current_state == "non-whitespace":
             x1 = x
         # End of data chunk
@@ -115,12 +121,13 @@ def vertical_state_change_analysis(state_changes):
         # Store chunk of data if both start and end are found
         if x1 is not None and x2 is not None:
             data_width = x2 - x1
-            if data_width > 1: # Ignore single lines (likely a crease in the paper)
+            if data_width > 1:  # Ignore single lines (likely a crease in the paper)
                 chunk_of_data.append([x1, y1, x2, y2])
             x1 = None
             x2 = None
 
     return chunk_of_data
+
 
 # Go through all the chunks of data and determine if the gap between them is within a certain threshold (horizontal analysis)
 def threshold_analysis(chunk_of_data, img, mode):
@@ -139,11 +146,11 @@ def threshold_analysis(chunk_of_data, img, mode):
     elif mode == "vertical":
         pos = height
         data_chunks = vertical_chunks
-    
+
     for i in range(1, len(chunk_of_data)):
         prev_data_start, prev_data_end = chunk_of_data[i - 1]
         curr_data_start, curr_data_end = chunk_of_data[i]
-        if i == 1:# Draw a line at the start of the first data chunk in the document
+        if i == 1:  # Draw a line at the start of the first data chunk in the document
             y_start = prev_data_start
         # Determine if data chunks are close enough to each other based on threshold
         gap = curr_data_start - prev_data_end
@@ -162,109 +169,142 @@ def threshold_analysis(chunk_of_data, img, mode):
 
     return img, data_chunks
 
+
 def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data, img, mode):
     width, height = img.size
     draw = ImageDraw.Draw(img)
     data_chunks = []
-    threshold = 30  
+    threshold = 30
     horizontal_row_complete = False
     purple = (255, 0, 255)
     green = (0, 255, 0)
-    blue = (0,0,255)
-    red = (255,0,0)
-    cyan = (0,255,255)
-    black = (0,0,0)
+    blue = (0, 0, 255)
+    red = (255, 0, 0)
+    cyan = (0, 255, 255)
+    black = (0, 0, 0)
     zone_start = True
+
+    # Store vertical section data
+    vertical_sections = []
 
     for i in range(1, len(vertical_chunk_of_data)):
         prev_x1, prev_y1, prev_x2, prev_y2 = vertical_chunk_of_data[i - 1]
         curr_x1, curr_y1, curr_x2, curr_y2 = vertical_chunk_of_data[i]
 
-        if (i==1):#First data point is always the start of a zone
+        if (i == 1):  # First data point is always the start of a zone
             zone_start = True
-        
 
         if (prev_y1 != curr_y1):
-            #print("Horizontal Row Complete")
+            # print("Horizontal Row Complete")
             horizontal_row_complete = True
         else:
             horizontal_row_complete = False
-        
+
         gap = curr_x1 - prev_x2
 
         if zone_start:
             draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=black)
-            #Zone start (x1, y1) and (x1, y2)
+            vertical_sections.append({
+                'top_left_x': prev_x1,
+                'top_left_y': prev_y1,
+                'width': prev_x2 - prev_x1,
+                'height': prev_y2 - prev_y1
+            })
+            # Zone start (x1, y1) and (x1, y2)
             y1 = prev_y1
             y2 = prev_y2
             x1 = prev_x1
             x2 = prev_x2
             zone_start = False
         if i == len(vertical_chunk_of_data) - 1:
-            #print("Reached the end ")
+            # print("Reached the end ")
             draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=green)
-            draw.line((x1,y1, curr_x2, y1), fill=purple)
-            draw.line((x1,y2, curr_x2, y2), fill=purple)
-            #Zone End (x2,y1) and (x2, y2)
-            #zone_start = True
+            draw.line((x1, y1, curr_x2, y1), fill=purple)
+            draw.line((x1, y2, curr_x2, y2), fill=purple)
+            # Zone End (x2,y1) and (x2, y2)
+            # zone_start = True
+            vertical_sections.append({
+                'top_left_x': curr_x1,
+                'top_left_y': curr_y1,
+                'width': curr_x2 - curr_x1,
+                'height': curr_y2 - curr_y1
+            })
 
-        if horizontal_row_complete: #Always the end of a data zone regardless of gap
+        if horizontal_row_complete:  # Always the end of a data zone regardless of gap
             draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=purple)
-            draw.line((x1,y1, prev_x2, y1), fill=purple)
-            draw.line((x1,y2, prev_x2, y2), fill=purple)
-            #Zone End (x2,y1) and (x2, y2)
+            draw.line((x1, y1, prev_x2, y1), fill=purple)
+            draw.line((x1, y2, prev_x2, y2), fill=purple)
+            # Zone End (x2,y1) and (x2, y2)
             zone_start = True
         elif gap <= threshold:
             continue
-        elif gap > threshold: #This is the end of a data zone and flag to start a new one on next iteration
+        elif gap > threshold:  # This is the end of a data zone and flag to start a new one on next iteration
             draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
-            draw.line((x1,y1, prev_x2, y1), fill=purple)
-            draw.line((x1,y2, prev_x2, y2), fill=purple)
-            #Zone End (x2,y1) and (x2, y2)
+            draw.line((x1, y1, prev_x2, y1), fill=purple)
+            draw.line((x1, y2, prev_x2, y2), fill=purple)
+            # Zone End (x2,y1) and (x2, y2)
             zone_start = True
-            
 
-    return img, data_chunks
+    return img, vertical_sections
+
 
 # Scan the image and produce a visual output of non-whitespace areas
-def image_scanner(image_path, output_csv, output_image):
+def image_scanner(image_path, output_json, output_image):
     img = Image.open(image_path).convert("RGB")
     original_img = Image.open(image_path).convert("RGB")
     draw = ImageDraw.Draw(img)
     line_positions = []
     horizontal_chunks = []
     vertical_chunks = []
-    
+
     # Determine the state changes in the horizontal direction
     state_changes = detect_state_changes(img, "horizontal")
     # Go through the state changes to determine the relevant chunks of data
     chunk_of_data = state_change_analysis(state_changes)
     # Document Analysis using Threshold
     img, horizontal_chunks = threshold_analysis(chunk_of_data, img, "horizontal")
-    
+
     # Determine the state changes in the vertical direction
     vertical_state_changes = detect_vertical_state_changes(original_img, horizontal_chunks)
     # Go through the state changes to determine the relevant chunks of data
     vertical_chunk_of_data = vertical_state_change_analysis(vertical_state_changes)
     # Document Analysis using Threshold
     img, vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunks, img, "vertical")
-    
+
     # Export the image with the lines drawn
     img.save(output_image)
-    # Export the line positions to a JSON file
-    custom_path = r"C:\Users\jovan\OneDrive\Desktop\CS499\line_positions.json"
-    with open(custom_path, "w") as json_file:
-        json.dump(line_positions, json_file, indent=4)
+
+    # Create JSON output
+    output_data = {
+        "document_sections": [
+            {
+                "section_id": f"section_{i + 1}",
+                **section
+            } for i, section in enumerate(vertical_chunks)
+        ]
+    }
+
+    # Export the data to JSON file
+    with open(output_json, "w") as json_file:
+        json.dump(output_data, json_file, indent=2)
+
+    # Print the number of sections detected
+    print(f"Detected {len(vertical_chunks)} document sections")
+
 
 # Output a CSV file with pixel values and an image with coordinates
 image_scanner(
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\CleanDocumentFirstPage.png",
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\MultiPage.pdf",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\Sample2.jpg",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\output.csv",
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\output_image.png"
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\output_MultiPage.pdf",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\output_Sample2.jpg",
+    # r"C:\Users\jovan\OneDrive\Desktop\CS499\CleanDocumentFirstPage.png",
+    # r"C:\Users\jovan\OneDrive\Desktop\CS499\MultiPage.pdf",
+    # r"C:\Users\jovan\OneDrive\Desktop\CS499\Sample2.jpg",
+    # r"C:\Users\jovan\OneDrive\Desktop\CS499\output.csv",
+    # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_image.png"
+    # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_MultiPage.pdf",
+    # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_Sample2.jpg",
+    r"C:\Users\Mason\PycharmProjects\scanner\scan0001.jpg",
+    r"C:\Users\Mason\PycharmProjects\scanner\output.json",
+    r"C:\Users\Mason\PycharmProjects\scanner\output.jpg"
+
 )
 
 # Performance Monitoring
