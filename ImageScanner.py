@@ -173,7 +173,6 @@ def threshold_analysis(chunk_of_data, img, mode):
 def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data, img, mode):
     width, height = img.size
     draw = ImageDraw.Draw(img)
-    data_chunks = []
     threshold = 30
     horizontal_row_complete = False
     purple = (255, 0, 255)
@@ -186,6 +185,9 @@ def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data
 
     # Store vertical section data
     vertical_sections = []
+
+    x1, y1, x2, y2 = None, None, None, None
+    current_section = None
 
     for i in range(1, len(vertical_chunk_of_data)):
         prev_x1, prev_y1, prev_x2, prev_y2 = vertical_chunk_of_data[i - 1]
@@ -204,45 +206,39 @@ def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data
 
         if zone_start:
             draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=black)
-            vertical_sections.append({
+            x1, y1, x2, y2 = prev_x1, prev_y1, prev_x2, prev_y2
+            current_section = {
                 'top_left_x': prev_x1,
                 'top_left_y': prev_y1,
                 'width': prev_x2 - prev_x1,
                 'height': prev_y2 - prev_y1
-            })
-            # Zone start (x1, y1) and (x1, y2)
-            y1 = prev_y1
-            y2 = prev_y2
-            x1 = prev_x1
-            x2 = prev_x2
+            }
+            vertical_sections.append(current_section)
             zone_start = False
         if i == len(vertical_chunk_of_data) - 1:
             # print("Reached the end ")
             draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=green)
             draw.line((x1, y1, curr_x2, y1), fill=purple)
             draw.line((x1, y2, curr_x2, y2), fill=purple)
-            # Zone End (x2,y1) and (x2, y2)
-            # zone_start = True
-            vertical_sections.append({
-                'top_left_x': curr_x1,
-                'top_left_y': curr_y1,
-                'width': curr_x2 - curr_x1,
-                'height': curr_y2 - curr_y1
-            })
 
-        if horizontal_row_complete:  # Always the end of a data zone regardless of gap
+            if horizontal_row_complete:
+                current_section = {
+                    'top_left_x': curr_x1,
+                    'top_left_y': curr_y1,
+                    'width': curr_x2 - curr_x1,
+                    'height': curr_y2 - curr_y1
+                }
+                vertical_sections.append(current_section)
+
+        elif horizontal_row_complete:
             draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=purple)
             draw.line((x1, y1, prev_x2, y1), fill=purple)
             draw.line((x1, y2, prev_x2, y2), fill=purple)
-            # Zone End (x2,y1) and (x2, y2)
             zone_start = True
-        elif gap <= threshold:
-            continue
-        elif gap > threshold:  # This is the end of a data zone and flag to start a new one on next iteration
+        elif gap > threshold:
             draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
             draw.line((x1, y1, prev_x2, y1), fill=purple)
             draw.line((x1, y2, prev_x2, y2), fill=purple)
-            # Zone End (x2,y1) and (x2, y2)
             zone_start = True
 
     return img, vertical_sections
@@ -301,9 +297,9 @@ image_scanner(
     # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_image.png"
     # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_MultiPage.pdf",
     # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_Sample2.jpg",
-    r"C:\Users\Mason\PycharmProjects\scanner\scan0001.jpg",
-    r"C:\Users\Mason\PycharmProjects\scanner\output.json",
-    r"C:\Users\Mason\PycharmProjects\scanner\output.jpg"
+    r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\scan0002.jpg",
+    r"C:\Users\Mason\PycharmProjects\pythonProject6\output.json",
+    r"C:\Users\Mason\PycharmProjects\pythonProject6\output.jpg"
 
 )
 
