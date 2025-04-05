@@ -94,7 +94,7 @@ def state_change_analysis(state_changes):
         # Store chunk of data if both start and end are found
         if y1 is not None and y2 is not None:
             data_height = y2 - y1
-            if data_height > 1:  # Ignore single lines (likely a crease in the paper)
+            if data_height > 4:  # Ignore single lines (likely a crease in the paper)
                 chunk_of_data.append([y1, y2])
             y1 = None
             y2 = None
@@ -121,7 +121,7 @@ def vertical_state_change_analysis(state_changes):
         # Store chunk of data if both start and end are found
         if x1 is not None and x2 is not None:
             data_width = x2 - x1
-            if data_width > 1:  # Ignore single lines (likely a crease in the paper)
+            if data_width > 4:  # Ignore single lines (likely a crease in the paper)
                 chunk_of_data.append([x1, y1, x2, y2])
             x1 = None
             x2 = None
