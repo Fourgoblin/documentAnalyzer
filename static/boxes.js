@@ -85,4 +85,42 @@ function makeResizableDiv(div) {
 });
 }
 
-makeResizableDiv('.resizable')
+function createResizeHTML() { //currently only creates one box, should be scalable with changes to naming logic
+
+  var div = document.createElement("div");
+  div.setAttribute("class", "resizable");
+  div.setAttribute('id', 'resizable1');
+
+  var resizers = document.createElement('div');
+  resizers.setAttribute("class", "resizers");
+  resizers.setAttribute('id', 'resizers1');
+
+  var topLeft = document.createElement('div');
+  topLeft.setAttribute('class', 'resizer top-left');
+  var topRight = document.createElement('div');
+  topRight.setAttribute('class', 'resizer top-right');
+  var bottomLeft = document.createElement('div');
+  bottomLeft.setAttribute('class', 'resizer bottom-left');
+  var bottomRight = document.createElement('div');
+  bottomRight.setAttribute('class', 'resizer bottom-right');
+
+  document.getElementById("image_holder").appendChild(div);
+  document.getElementById("resizable1").appendChild(resizers);
+  document.getElementById("resizers1").appendChild(topLeft);
+  document.getElementById("resizers1").appendChild(topRight);
+  document.getElementById("resizers1").appendChild(bottomLeft);
+  document.getElementById("resizers1").appendChild(bottomRight);
+
+  makeResizableDiv('.resizable')
+}
+
+function deleteResizeHTML() { //functions, but will need a way to choose which box to delete
+
+  var childList = document.getElementById("resizable1");
+  while (childList.hasChildNodes()) {
+    childList.removeChild(childList.firstChild)
+  }
+  childList.remove();
+
+}
+

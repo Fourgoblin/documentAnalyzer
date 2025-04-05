@@ -18,13 +18,20 @@
       <input type="range" min="1" max="100" value="50" class="slider" id="myRangeHorizontal">
       <p>Value: <span id="demoHorizontal"></span></p>
     </div>
-    <button type="button" id="CreateBoxButton" class="buttons">Create Box</button>
-    <button type="button" id="DeleteBoxButton" class="buttons">Delete Box</button>
+    <button type="button" id="CreateBoxButton" class="buttons" onclick="createResizeHTML()">Create Box</button>
+    <button type="button" id="DeleteBoxButton" class="buttons" onclick="deleteResizeHTML()">Delete Box</button>
   </div>  
   <div class="container"> <!--this is the parent div of all divs regarding the image and content boxes-->
       <div id="image_holder" > 
       <img src="{{ url_for('static',filename='CleanDocumentFirstPage.png') }}"  id="doc_image">
-        <div class='resizable'>
+       
+      
+      
+      
+      <!-- 
+      This is all here as it was used for testing, will be removed in final build as functions will be creating the HTML for resizers
+      
+      <div class='resizable'>
             <div class='resizers'>
               <div class='resizer top-left'></div>
               <div class='resizer top-right'></div>
@@ -39,6 +46,11 @@
             <div class='resizer bottom-left'></div>
             <div class='resizer bottom-right'></div>
           </div>
+          -->
+
+
+
+
       </div>
       </div> 
         
