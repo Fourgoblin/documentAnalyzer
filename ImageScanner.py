@@ -2,19 +2,10 @@ import csv
 import time
 import json
 from PIL import Image, ImageDraw, ImageFont
+#from PDF2Image import convert_from_path
 
 # Perfmance Monitoring
 start_time = time.time()
-
-# JSON file structure
-data = {
-    "Data Chunk": {
-        "Index": None,
-        "X-Pos": None,
-        "Y-Pos": None
-    }
-}
-
 
 # Euclidean distance between two RGB values
 def euclidean_distance(rgb1, rgb2):
@@ -22,11 +13,10 @@ def euclidean_distance(rgb1, rgb2):
     r2, g2, b2 = rgb2
     return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
 
-
 # Function to detect horizontal state changes
 def detect_state_changes(img, mode):
     width, height = img.size
-    horizontal_threshold = 100
+    euclidian_threshold = 100
 
     state_changes = []
     previous_state = None
@@ -34,7 +24,7 @@ def detect_state_changes(img, mode):
     if mode == "horizontal":
         for y in range(height):
             # Determine the state
-            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < horizontal_threshold for x in
+            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < euclidian_threshold for x in
                    range(width)):
                 current_state = "whitespace"
             else:
@@ -53,14 +43,14 @@ def detect_vertical_state_changes(img, data_chunks):
     width, _ = img.size
     previous_state = None
     state_changes = []
-    vertical_threshold = 100
+    euclidian_threshold = 100
 
     for i in range(len(data_chunks)):
         y1, y2 = data_chunks[i]  # Unpack (start, end) directly
         previous_state = None
         for x in range(width):
             # Check if all pixels in the column (x) are similar within this chunk
-            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < vertical_threshold for y in
+            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < euclidian_threshold for y in
                    range(y1, y2)):
                 current_state = "whitespace"
             else:
@@ -210,35 +200,34 @@ def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data
             current_section = {
                 'top_left_x': prev_x1,
                 'top_left_y': prev_y1,
-                'width': prev_x2 - prev_x1,
+                #'width': not quite ready to determine width yet
                 'height': prev_y2 - prev_y1
             }
-            vertical_sections.append(current_section)
+            #vertical_sections.append(current_section)
             zone_start = False
+        # Last data in the set it always the end of a zone
         if i == len(vertical_chunk_of_data) - 1:
             # print("Reached the end ")
             draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=green)
             draw.line((x1, y1, curr_x2, y1), fill=purple)
             draw.line((x1, y2, curr_x2, y2), fill=purple)
-
-            if horizontal_row_complete:
-                current_section = {
-                    'top_left_x': curr_x1,
-                    'top_left_y': curr_y1,
-                    'width': curr_x2 - curr_x1,
-                    'height': curr_y2 - curr_y1
-                }
-                vertical_sections.append(current_section)
-
+            current_section['width'] = curr_x2 - x1
+            vertical_sections.append(current_section)
+        # The end of a row always marks the completion of a zone
         elif horizontal_row_complete:
-            draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=purple)
+            draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=blue)
             draw.line((x1, y1, prev_x2, y1), fill=purple)
             draw.line((x1, y2, prev_x2, y2), fill=purple)
+            current_section['width'] = prev_x2 - x1
+            vertical_sections.append(current_section)
             zone_start = True
+        # Large gap also marks the completion of a zone
         elif gap > threshold:
             draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
             draw.line((x1, y1, prev_x2, y1), fill=purple)
             draw.line((x1, y2, prev_x2, y2), fill=purple)
+            current_section['width'] = prev_x2 - x1
+            vertical_sections.append(current_section)
             zone_start = True
 
     return img, vertical_sections
@@ -290,17 +279,17 @@ def image_scanner(image_path, output_json, output_image):
 
 # Output a CSV file with pixel values and an image with coordinates
 image_scanner(
-    # r"C:\Users\jovan\OneDrive\Desktop\CS499\CleanDocumentFirstPage.png",
+    #r"C:\Users\jovan\OneDrive\Desktop\CS499\CleanDocumentFirstPage.png",
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
     # r"C:\Users\jovan\OneDrive\Desktop\CS499\MultiPage.pdf",
     # r"C:\Users\jovan\OneDrive\Desktop\CS499\Sample2.jpg",
-    # r"C:\Users\jovan\OneDrive\Desktop\CS499\output.csv",
-    # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_image.png"
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\output_JSON_ReleaseAndAuthorizationOfPayment-2.json",
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\output_image_ReleaseAndAuthorizationOfPayment-2.jpg",
     # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_MultiPage.pdf",
     # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_Sample2.jpg",
-    r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\scan0002.jpg",
-    r"C:\Users\Mason\PycharmProjects\pythonProject6\output.json",
-    r"C:\Users\Mason\PycharmProjects\pythonProject6\output.jpg"
-
+    #r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\scan0002.jpg",
+    #r"C:\Users\Mason\PycharmProjects\pythonProject6\output.json",
+    #r"C:\Users\Mason\PycharmProjects\pythonProject6\output.jpg"
 )
 
 # Performance Monitoring
