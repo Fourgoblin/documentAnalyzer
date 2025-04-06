@@ -15,3 +15,20 @@ horizontalSlider.oninput = function() {
     outputHorizontal.innerHTML = this.value;    
 
 }
+
+function uploadImage() {
+    const formData = new FormData(document.getElementById("uploadForm"));
+
+    fetch("/UX", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.fileUrl) {
+            const Image = document.getElementById("doc_image");
+            Image.setAttribute("src", data.fileUrl.toString());
+        }
+    })
+    .catch(error => console.error("Error:", error));
+}

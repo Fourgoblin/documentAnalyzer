@@ -20,11 +20,21 @@
     </div>
     <button type="button" id="CreateBoxButton" class="buttons" onclick="createResizeHTML()">Create Box</button>
     <button type="button" id="DeleteBoxButton" class="buttons" onclick="deleteResizeHTML()">Delete Box</button>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="file" name="file" id="fileInput" required>
+      <button type="button" onclick="uploadImage()">Upload File</button>
+    </form>
+
+    <form method="POST" action="/Image_Scanner">
+      <button type="submit">Scan Image</button>
+    </form>
+
     <button type="button" id="JSONButton" class="buttons" onclick="createFromJson()">Create from JSON (testing)</button>
   </div>  
   <div class="container"> <!--this is the parent div of all divs regarding the image and content boxes-->
       <div id="image_holder" > 
-      <img src="{{ url_for('static',filename='ReleaseAndAuthorizationOfPayment-2.jpg') }}"  id="doc_image">
+      <img  id="doc_image">
       <!-- 
       This is all here as it was used for testing, will be removed in final build as functions will be creating the HTML for resizers
       
