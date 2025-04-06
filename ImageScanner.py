@@ -1,8 +1,9 @@
 import csv
 import time
 import json
+import os
 from PIL import Image, ImageDraw, ImageFont
-#from PDF2Image import convert_from_path
+from pdf2image import convert_from_path
 
 # Perfmance Monitoring
 start_time = time.time()
@@ -163,7 +164,8 @@ def threshold_analysis(chunk_of_data, img, mode):
 def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data, img, mode):
     width, height = img.size
     draw = ImageDraw.Draw(img)
-    threshold = 30
+    threshold = 70 #30 worked well for the test cases
+
     horizontal_row_complete = False
     purple = (255, 0, 255)
     green = (0, 255, 0)
@@ -277,20 +279,44 @@ def image_scanner(image_path, output_json, output_image):
     print(f"Detected {len(vertical_chunks)} document sections")
 
 
-# Output a CSV file with pixel values and an image with coordinates
-image_scanner(
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\CleanDocumentFirstPage.png",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
-    # r"C:\Users\jovan\OneDrive\Desktop\CS499\MultiPage.pdf",
-    # r"C:\Users\jovan\OneDrive\Desktop\CS499\Sample2.jpg",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\output_JSON_ReleaseAndAuthorizationOfPayment-2.json",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\output_image_ReleaseAndAuthorizationOfPayment-2.jpg",
-    # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_MultiPage.pdf",
-    # r"C:\Users\jovan\OneDrive\Desktop\CS499\output_Sample2.jpg",
-    #r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\scan0002.jpg",
-    #r"C:\Users\Mason\PycharmProjects\pythonProject6\output.json",
-    #r"C:\Users\Mason\PycharmProjects\pythonProject6\output.jpg"
-)
+def initialize_scanner(input_file_path, output_file_path):
+    # Get the document name
+    document_name = os.path.splitext(os.path.basename(input_file_path))[0]
+
+    # Get the file extension
+    ext = os.path.splitext(input_file_path)[1].lower()
+
+    # If the file is a pdf, convert it to images and analyze each image
+    if ext == ".pdf":
+        try:
+            images = convert_from_path(input_file_path, dpi=300)
+            print(f"Converted {len(images)} page(s) from PDF.")
+
+            for i, img in enumerate(images):
+                new_image_path = os.path.join(output_file_path, f"{document_name}_page_{i + 1}.png")
+                json_output_path = os.path.join(output_file_path, f"{document_name}_page_{i + 1}_analyzed.json")
+                analyzed_image_path = os.path.join(output_file_path, f"{document_name}_page_{i + 1}_analyzed.png")
+                img.save(new_image_path, "PNG")
+                # Perform analysis on each page
+                image_scanner(new_image_path, json_output_path, analyzed_image_path)
+        except Exception as e:
+            print(f"Error converting PDF: {e}")
+    # If the file is already an image, proceed with analysis
+    elif ext in [".jpg", ".jpeg", ".png", ".bmp"]:
+        json_output_path = os.path.join(output_file_path, f"{document_name}_analyzed.json")
+        analyzed_image_path = os.path.join(output_file_path,f"{document_name}_analyzed.png")
+        image_scanner(input_file_path, json_output_path, analyzed_image_path)
+    else:
+        print(f"Skipping: Unsupported file type → {input_file_path}")
+
+
+initialize_scanner(
+    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg"
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\Test Results"
+    )
+
+
 
 # Performance Monitoring
 end_time = time.time()
