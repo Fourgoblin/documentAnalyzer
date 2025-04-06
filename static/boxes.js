@@ -1,3 +1,38 @@
+let testData = {};
+let sectionsArray = [];
+fetch('static/output.json').then(function (response) {
+
+  return response.json();
+
+}).then(data => {
+
+  testData = data;
+  let allSections = storeAllSectionsData(testData.document_sections);
+
+}).catch(function (error) {
+  console.error("Something went wrong");
+  console.error(error);
+})
+
+function storeAllSectionsData(sections) {
+
+ sectionsArray = [];
+
+  sections.forEach(section => {
+    let sectionObject = { 
+        section_id: section.section_id,
+        top_left_x: section.top_left_x,
+        top_left_y: section.top_left_y,
+        width: section.width,
+        height: section.height
+
+    };
+
+    sectionsArray.push(sectionObject);
+  });
+  return(sectionsArray);
+}
+
 function makeResizableDiv(div) {
   const elements = document.querySelectorAll(div); 
   elements.forEach(element => {
@@ -104,6 +139,11 @@ function createResizeHTML() { //currently only creates one box, should be scalab
   var bottomRight = document.createElement('div');
   bottomRight.setAttribute('class', 'resizer bottom-right');
 
+  div.style.left = '100px';
+  div.style.top = '100px';
+  div.style.width = '100px';
+  div.style.height = '100px';
+
   document.getElementById("image_holder").appendChild(div);
   document.getElementById("resizable1").appendChild(resizers);
   document.getElementById("resizers1").appendChild(topLeft);
@@ -124,3 +164,42 @@ function deleteResizeHTML() { //functions, but will need a way to choose which b
 
 }
 
+function createFromJson() {
+  var i = 0;
+  sectionsArray.forEach(section => {
+
+  var div = document.createElement("div");
+  div.setAttribute("class", "resizable");
+  div.setAttribute('id', section.section_id);
+  div.style.left = section.top_left_x+'px';
+  div.style.top = section.top_left_y+'px';
+  div.style.width = section.width+'px';
+  div.style.height = section.height+'px';
+  
+  
+
+  var resizers = document.createElement('div');
+  resizers.setAttribute("class", "resizers");
+  resizers.setAttribute('id', 'resizers' + i.toString());
+
+  var topLeft = document.createElement('div');
+  topLeft.setAttribute('class', 'resizer top-left');
+  var topRight = document.createElement('div');
+  topRight.setAttribute('class', 'resizer top-right');
+  var bottomLeft = document.createElement('div');
+  bottomLeft.setAttribute('class', 'resizer bottom-left');
+  var bottomRight = document.createElement('div');
+  bottomRight.setAttribute('class', 'resizer bottom-right');
+
+  document.getElementById("image_holder").appendChild(div);
+  document.getElementById(section.section_id).appendChild(resizers);
+  document.getElementById("resizers"+i.toString()).appendChild(topLeft);
+  document.getElementById("resizers"+i.toString()).appendChild(topRight);
+  document.getElementById("resizers"+i.toString()).appendChild(bottomLeft);
+  document.getElementById("resizers"+i.toString()).appendChild(bottomRight);
+
+  i = i+1;
+
+  });
+  makeResizableDiv('.resizable');
+}

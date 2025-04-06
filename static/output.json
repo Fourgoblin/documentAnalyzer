@@ -1,0 +1,53 @@
+{
+  "document_sections": [
+    {
+      "section_id": "section_1",
+      "top_left_x": 101,
+      "top_left_y": 100,
+      "height": 67,
+      "width": 240
+    },
+    {
+      "section_id": "section_2",
+      "top_left_x": 100,
+      "top_left_y": 206,
+      "height": 54,
+      "width": 636
+    },
+    {
+      "section_id": "section_3",
+      "top_left_x": 100,
+      "top_left_y": 314,
+      "height": 16,
+      "width": 76
+    },
+    {
+      "section_id": "section_4",
+      "top_left_x": 449,
+      "top_left_y": 314,
+      "height": 16,
+      "width": 35
+    },
+    {
+      "section_id": "section_5",
+      "top_left_x": 101,
+      "top_left_y": 413,
+      "height": 55,
+      "width": 185
+    },
+    {
+      "section_id": "section_6",
+      "top_left_x": 370,
+      "top_left_y": 413,
+      "height": 55,
+      "width": 215
+    },
+    {
+      "section_id": "section_7",
+      "top_left_x": 100,
+      "top_left_y": 521,
+      "height": 239,
+      "width": 595
+    }
+  ]
+}

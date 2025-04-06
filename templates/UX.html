@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="../static/resizeStyle.css">
     <link rel="stylesheet" href="../static/toolStyle.css">
 </head>
-<body onload="makeResizableDiv('.resizable')">
+<body>
   <div id = 'tool_parent'> <!--this is the parent div that holds all buttons, sliders, etc-->
     <div class="slidecontainer" id="verticalSlide">
       <p>Vertical Threshold</p>
@@ -20,14 +20,11 @@
     </div>
     <button type="button" id="CreateBoxButton" class="buttons" onclick="createResizeHTML()">Create Box</button>
     <button type="button" id="DeleteBoxButton" class="buttons" onclick="deleteResizeHTML()">Delete Box</button>
+    <button type="button" id="JSONButton" class="buttons" onclick="createFromJson()">Create from JSON (testing)</button>
   </div>  
   <div class="container"> <!--this is the parent div of all divs regarding the image and content boxes-->
       <div id="image_holder" > 
-      <img src="{{ url_for('static',filename='CleanDocumentFirstPage.png') }}"  id="doc_image">
-       
-      
-      
-      
+      <img src="{{ url_for('static',filename='ReleaseAndAuthorizationOfPayment-2.jpg') }}"  id="doc_image">
       <!-- 
       This is all here as it was used for testing, will be removed in final build as functions will be creating the HTML for resizers
       
@@ -47,10 +44,6 @@
             <div class='resizer bottom-right'></div>
           </div>
           -->
-
-
-
-
       </div>
       </div> 
         
