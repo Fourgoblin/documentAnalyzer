@@ -280,6 +280,7 @@ def image_scanner(image_path, output_json, output_image):
 
 
 def initialize_scanner(input_file_path, output_file_path):
+    os.makedirs(output_file_path, exist_ok=True)
     # Get the document name
     document_name = os.path.splitext(os.path.basename(input_file_path))[0]
 
