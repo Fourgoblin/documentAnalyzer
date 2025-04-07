@@ -1,5 +1,4 @@
 {
-    "document_png": "base64", // We will still need some way to get the original png into the browser app. Still unsure if this is the best way to do it at the moment
     "document_sections": [
     {
       "section_id": "section_1",
@@ -7,8 +6,6 @@
       "top_left_y": 100,
       "width": 150,
       "height": 200,
-      "content_type": "text",
-      "content": "One of the challenges that customers face is creating/importing new communications into Exstream."
     },
     {
       "section_id": "section_2",
@@ -16,8 +13,6 @@
       "top_left_y": 100,
       "width": 150,
       "height": 200,
-      "content_type": "image",
-      "content": "An image of a person"
     },
     {
       "section_id": "section_3",
@@ -25,8 +20,6 @@
       "top_left_y": 320,
       "width": 320,
       "height": 180,
-      "content_type": "text",
-      "content": "Opentext's Exstream software helps customers send enterprise scale, customized communications to their customers."
     }
   ]
 }
