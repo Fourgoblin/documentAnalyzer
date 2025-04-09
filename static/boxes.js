@@ -1,18 +1,6 @@
 let testData = {};
 let sectionsArray = [];
-fetch('static/output.json').then(function (response) {
 
-  return response.json();
-
-}).then(data => {
-
-  testData = data;
-  let allSections = storeAllSectionsData(testData.document_sections);
-
-}).catch(function (error) {
-  console.error("Something went wrong");
-  console.error(error);
-})
 
 function storeAllSectionsData(sections) {
 
@@ -165,6 +153,23 @@ function deleteResizeHTML() { //functions, but will need a way to choose which b
 }
 
 function createFromJson() {
+  fetch('static/ReleaseAndAuthorizationOfPayment-2_analyzed.json').then(function (response) {
+
+    return response.json();
+  
+  }).then(data => {
+  
+    testData = data;
+    let allSections = storeAllSectionsData(testData.document_sections);
+  
+  }).catch(function (error) {
+    console.error("Something went wrong");
+    console.error(error);
+  })
+  
+  
+  
+  
   var i = 0;
   sectionsArray.forEach(section => {
 

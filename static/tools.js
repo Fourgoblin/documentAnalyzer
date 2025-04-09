@@ -17,18 +17,33 @@ horizontalSlider.oninput = function() {
 }
 
 function uploadImage() {
-    const formData = new FormData(document.getElementById("uploadForm"));
+    const file = document.getElementById('fileInput').files[0];
+    const reader = new FileReader();
 
-    fetch("/UX", {
-        method: "POST",
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.fileUrl) {
-            const Image = document.getElementById("doc_image");
-            Image.setAttribute("src", data.fileUrl.toString());
-        }
-    })
-    .catch(error => console.error("Error:", error));
+    reader.onloadend = function() {
+        const img = document.getElementById('doc_image');
+        img.src = reader.result;
+
+        // Send the image data to Flask
+        const formData = new FormData();
+        formData.append('file', file);  // Send the actual file object, not just the base64 string
+
+        fetch('/Image_Scanner', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.text())
+        .then(result => {
+            console.log(result);  // Handle the response from Flask if needed
+        })
+        .catch(error => {
+            console.error('Error uploading image:', error);
+        });
+    }
+
+    if (file) {
+        reader.readAsDataURL(file);  // Read the file as a data URL for the img preview
+    } else {
+        preview.innerHTML = 'No file selected';
+    }
 }
