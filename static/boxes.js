@@ -1,10 +1,11 @@
 let testData = {};
-let sectionsArray = [];
+let allSections = [];
+//let sectionsArray = [];
 
 
 function storeAllSectionsData(sections) {
-
- sectionsArray = [];
+  //allSections = [];
+ var sectionsArray = [];
 
   sections.forEach(section => {
     let sectionObject = { 
@@ -20,6 +21,25 @@ function storeAllSectionsData(sections) {
   });
   return(sectionsArray);
 }
+
+
+
+function saveJson() {
+    var i = 0;
+    var document_sections = [];
+    const resizables = document.getElementsByClassName("resizable");
+    const resizeArray = Array.from(resizables);
+    resizeArray.forEach(resizable => {
+      var data = {"section_id": resizable.id, "top_left_x": resizable.style.left, "top_left_y": resizable.style.top, "width": resizable.style.width, height:resizable.style.height};
+      document_sections.push(data)
+    });
+
+    // Specify the file path (you can change the file name and path as needed)
+    const filePath = 'static'+newPath;
+
+    
+}
+
 
 function makeResizableDiv(div) {
   const elements = document.querySelectorAll(div); 
@@ -152,15 +172,55 @@ function deleteResizeHTML() { //functions, but will need a way to choose which b
 
 }
 
+
 function createFromJson() {
-  fetch('static/ReleaseAndAuthorizationOfPayment-2_analyzed.json').then(function (response) {
+ 
+  fetch("static/"+newPath).then(function (response) {
 
     return response.json();
   
   }).then(data => {
   
     testData = data;
-    let allSections = storeAllSectionsData(testData.document_sections);
+    allSections = storeAllSectionsData(testData.document_sections);
+
+    var i = 0;
+  allSections.forEach(section => {
+
+  var div = document.createElement("div");
+  div.setAttribute("class", "resizable");
+  div.setAttribute('id', section.section_id);
+  div.style.left = section.top_left_x+'px';
+  div.style.top = section.top_left_y+'px';
+  div.style.width = section.width+'px';
+  div.style.height = section.height+'px';
+  
+  
+
+  var resizers = document.createElement('div');
+  resizers.setAttribute("class", "resizers");
+  resizers.setAttribute('id', 'resizers' + i.toString());
+
+  var topLeft = document.createElement('div');
+  topLeft.setAttribute('class', 'resizer top-left');
+  var topRight = document.createElement('div');
+  topRight.setAttribute('class', 'resizer top-right');
+  var bottomLeft = document.createElement('div');
+  bottomLeft.setAttribute('class', 'resizer bottom-left');
+  var bottomRight = document.createElement('div');
+  bottomRight.setAttribute('class', 'resizer bottom-right');
+
+  document.getElementById("image_holder").appendChild(div);
+  document.getElementById(section.section_id).appendChild(resizers);
+  document.getElementById("resizers"+i.toString()).appendChild(topLeft);
+  document.getElementById("resizers"+i.toString()).appendChild(topRight);
+  document.getElementById("resizers"+i.toString()).appendChild(bottomLeft);
+  document.getElementById("resizers"+i.toString()).appendChild(bottomRight);
+
+  i = i+1;
+
+  });
+  makeResizableDiv('.resizable');
   
   }).catch(function (error) {
     console.error("Something went wrong");
@@ -171,7 +231,7 @@ function createFromJson() {
   
   
   var i = 0;
-  sectionsArray.forEach(section => {
+  allSections.forEach(section => {
 
   var div = document.createElement("div");
   div.setAttribute("class", "resizable");

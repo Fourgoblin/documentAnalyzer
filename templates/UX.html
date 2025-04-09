@@ -23,14 +23,17 @@
 
    
       <input type="file" name="file" id="fileInput" required>
-      <button type="button" onclick="uploadImage()">Upload File</button>
+      <button type="button" id="uploadButton"onclick="uploadImage()">Upload File</button>
+      <button id="saveButton"onclick="saveJson()">Save Changes</button>
 
-    <form method="POST" action="/Image_Scanner">
+    <!--<form method="POST" action="/Image_Scanner">
       <button type="submit">Scan Image</button>
     </form>
 
     <button type="button" id="JSONButton" class="buttons" onclick="createFromJson()">Create from JSON (testing)</button>
-  </div>  
+   
+-->
+</div> 
   <div class="container"> <!--this is the parent div of all divs regarding the image and content boxes-->
       <div id="image_holder" > 
       <img  id="doc_image">

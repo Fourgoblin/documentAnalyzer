@@ -15,30 +15,35 @@ horizontalSlider.oninput = function() {
     outputHorizontal.innerHTML = this.value;    
 
 }
-
+let newPath = ""
 function uploadImage() {
     const file = document.getElementById('fileInput').files[0];
     const reader = new FileReader();
-
+    newPath = modifyFileName(file.name);
     reader.onloadend = function() {
         const img = document.getElementById('doc_image');
-        img.src = reader.result;
-
+        
         // Send the image data to Flask
         const formData = new FormData();
         formData.append('file', file);  // Send the actual file object, not just the base64 string
-
+        img.src = reader.result;
+        //img.src = "static/"+file.name;
         fetch('/Image_Scanner', {
             method: 'POST',
             body: formData,
         })
         .then(response => response.text())
         .then(result => {
+
+            if (result === "Image Scanned Successfully") {
+                createFromJson(newPath);
+            }
             console.log(result);  // Handle the response from Flask if needed
         })
         .catch(error => {
             console.error('Error uploading image:', error);
         });
+        
     }
 
     if (file) {
@@ -46,4 +51,14 @@ function uploadImage() {
     } else {
         preview.innerHTML = 'No file selected';
     }
+
+    
 }
+
+
+function modifyFileName(fileName) {
+  // Remove the file extension using a regular expression
+  return fileName.replace(/\.[^/.]+$/, '') + '_analyzed.json';
+}
+
+

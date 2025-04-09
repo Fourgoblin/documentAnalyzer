@@ -23,6 +23,14 @@
     margin-top: 40px;
 
   }
+
+  #fileInput {
+    margin-top: 20px;
+  }
+
+  #uploadButton {
+    margin-top: 20px;
+  }
   
   .slidecontainer {
     width: 50%; /* Width of the outside container */
