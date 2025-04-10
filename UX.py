@@ -1,8 +1,14 @@
 from flask import Flask, render_template, request
 import os
 import ImageScanner
+import webbrowser
 
 app = Flask(__name__)
+
+def main():
+    if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        webbrowser.open_new('http://127.0.0.1:2000/')
+    app.run(host="127.0.0.1", port=2000)
 
 @app.route('/')
 def boxes():
@@ -31,4 +37,4 @@ def Image_Scanner():
     return "Image Scanned Successfully"
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    main()

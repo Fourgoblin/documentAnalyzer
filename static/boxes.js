@@ -1,5 +1,5 @@
 let testData = {};
-//let allSections = [];
+let allSections = [];
 //let sectionsArray = [];
 
 
@@ -11,7 +11,7 @@ function deleteAllBoxes() {
     }
     boxes[0].parentNode.removeChild(boxes[0]);
   }
-
+  allSections = [];
 
 }
 
@@ -195,7 +195,7 @@ function createFromJson() {
   }).then(data => {
   
     testData = data;
-    var allSections = storeAllSectionsData(testData.document_sections);
+    allSections = storeAllSectionsData(testData.document_sections);
 
     var i = 0;
   allSections.forEach(section => {
