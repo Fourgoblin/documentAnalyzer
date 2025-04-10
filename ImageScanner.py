@@ -121,13 +121,14 @@ def vertical_state_change_analysis(state_changes):
 
 
 # Go through all the chunks of data and determine if the gap between them is within a certain threshold (horizontal analysis)
-def threshold_analysis(chunk_of_data, img, mode):
+def horizontal_threshold_analysis(chunk_of_data, img, mode, input_threshold):
     width, height = img.size
     draw = ImageDraw.Draw(img)
     data_chunks = []
     horizontal_chunks = []
     vertical_chunks = []
-    threshold = 25
+    #threshold = 45
+    threshold = input_threshold
     y_start = 0
     y_end = 0
 
@@ -161,23 +162,27 @@ def threshold_analysis(chunk_of_data, img, mode):
     return img, data_chunks
 
 
-def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data, img, mode):
+def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data, img, mode, input_threshold):
     width, height = img.size
     draw = ImageDraw.Draw(img)
-    threshold = 70 #30 worked well for the test cases
+    #vertical_threshold = 70 
+    threshold = input_threshold 
+    #threshold = input_threshold
 
     horizontal_row_complete = False
     purple = (255, 0, 255)
+    red = (255, 0, 0)
+    '''
     green = (0, 255, 0)
     blue = (0, 0, 255)
     red = (255, 0, 0)
     cyan = (0, 255, 255)
     black = (0, 0, 0)
+    '''
     zone_start = True
 
     # Store vertical section data
     vertical_sections = []
-
     x1, y1, x2, y2 = None, None, None, None
     current_section = None
 
@@ -197,7 +202,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data
         gap = curr_x1 - prev_x2
 
         if zone_start:
-            draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=black)
+            draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=red)
             x1, y1, x2, y2 = prev_x1, prev_y1, prev_x2, prev_y2
             current_section = {
                 'top_left_x': prev_x1,
@@ -205,29 +210,28 @@ def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data
                 #'width': not quite ready to determine width yet
                 'height': prev_y2 - prev_y1
             }
-            #vertical_sections.append(current_section)
             zone_start = False
         # Last data in the set it always the end of a zone
         if i == len(vertical_chunk_of_data) - 1:
             # print("Reached the end ")
-            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=green)
-            draw.line((x1, y1, curr_x2, y1), fill=purple)
-            draw.line((x1, y2, curr_x2, y2), fill=purple)
+            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
+            draw.line((x1, y1, curr_x2, y1), fill=red)
+            draw.line((x1, y2, curr_x2, y2), fill=red)
             current_section['width'] = curr_x2 - x1
             vertical_sections.append(current_section)
         # The end of a row always marks the completion of a zone
         elif horizontal_row_complete:
-            draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=blue)
-            draw.line((x1, y1, prev_x2, y1), fill=purple)
-            draw.line((x1, y2, prev_x2, y2), fill=purple)
+            draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
+            draw.line((x1, y1, prev_x2, y1), fill=red)
+            draw.line((x1, y2, prev_x2, y2), fill=red)
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
         # Large gap also marks the completion of a zone
         elif gap > threshold:
             draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
-            draw.line((x1, y1, prev_x2, y1), fill=purple)
-            draw.line((x1, y2, prev_x2, y2), fill=purple)
+            draw.line((x1, y1, prev_x2, y1), fill=red)
+            draw.line((x1, y2, prev_x2, y2), fill=red)
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
@@ -236,7 +240,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data
 
 
 # Scan the image and produce a visual output of non-whitespace areas
-def image_scanner(image_path, output_json, output_image):
+def image_scanner(image_path, output_json, output_image, horizontal_threshold, vertical_threshold):
     img = Image.open(image_path).convert("RGB")
     original_img = Image.open(image_path).convert("RGB")
     draw = ImageDraw.Draw(img)
@@ -249,14 +253,14 @@ def image_scanner(image_path, output_json, output_image):
     # Go through the state changes to determine the relevant chunks of data
     chunk_of_data = state_change_analysis(state_changes)
     # Document Analysis using Threshold
-    img, horizontal_chunks = threshold_analysis(chunk_of_data, img, "horizontal")
+    img, horizontal_chunks = horizontal_threshold_analysis(chunk_of_data, img, "horizontal", horizontal_threshold)
 
     # Determine the state changes in the vertical direction
     vertical_state_changes = detect_vertical_state_changes(original_img, horizontal_chunks)
     # Go through the state changes to determine the relevant chunks of data
     vertical_chunk_of_data = vertical_state_change_analysis(vertical_state_changes)
     # Document Analysis using Threshold
-    img, vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunks, img, "vertical")
+    img, vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunks, img, "vertical", vertical_threshold)
 
     # Export the image with the lines drawn
     img.save(output_image)
@@ -279,8 +283,7 @@ def image_scanner(image_path, output_json, output_image):
     print(f"Detected {len(vertical_chunks)} document sections")
 
 
-def initialize_scanner(input_file_path, output_file_path):
-    os.makedirs(output_file_path, exist_ok=True)
+def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, vertical_threshold):
     # Get the document name
     document_name = os.path.splitext(os.path.basename(input_file_path))[0]
 
@@ -299,22 +302,25 @@ def initialize_scanner(input_file_path, output_file_path):
                 analyzed_image_path = os.path.join(output_file_path, f"{document_name}_page_{i + 1}_analyzed.png")
                 img.save(new_image_path, "PNG")
                 # Perform analysis on each page
-                image_scanner(new_image_path, json_output_path, analyzed_image_path)
+                image_scanner(new_image_path, json_output_path, analyzed_image_path, horizontal_threshold, vertical_threshold)
         except Exception as e:
             print(f"Error converting PDF: {e}")
     # If the file is already an image, proceed with analysis
     elif ext in [".jpg", ".jpeg", ".png", ".bmp"]:
         json_output_path = os.path.join(output_file_path, f"{document_name}_analyzed.json")
         analyzed_image_path = os.path.join(output_file_path,f"{document_name}_analyzed.png")
-        image_scanner(input_file_path, json_output_path, analyzed_image_path)
+        image_scanner(input_file_path, json_output_path, analyzed_image_path, horizontal_threshold, vertical_threshold)
     else:
         print(f"Skipping: Unsupported file type → {input_file_path}")
 
 
 initialize_scanner(
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg"
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\Test Results"
+    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
+    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase_page_4.png",
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\Test Results",
+    45,  # Horizontal threshold
+    210  # Vertical threshold - 70 worked well
     )
 
 
