@@ -1,8 +1,7 @@
-import csv
 import time
 import json
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from pdf2image import convert_from_path
 
 # Perfmance Monitoring
@@ -14,136 +13,108 @@ def euclidean_distance(rgb1, rgb2):
     r2, g2, b2 = rgb2
     return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
 
-# Function to detect horizontal state changes
-def detect_state_changes(img, mode):
+# this function scans the image and identifies data-containing rows/columns
+def detect_state_changes(img, mode, horizontal_data_chunks=None):
     width, height = img.size
     euclidian_threshold = 100
-
     state_changes = []
     previous_state = None
-    # Horizontal mode
+
+    # For horizontal analysis, scan document row by row
     if mode == "horizontal":
         for y in range(height):
-            # Determine the state
+            # Check if all pixels in the row are within the same range of RGB values and set state accordingly
             if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < euclidian_threshold for x in
                    range(width)):
                 current_state = "whitespace"
             else:
                 current_state = "non-whitespace"
-            # Record the state
+            # Detect and save all state changes for future analysis
             if previous_state is None:
                 previous_state = current_state
             if previous_state is not None and previous_state != current_state:
                 state_changes.append((y, previous_state, current_state))
             previous_state = current_state
-    return state_changes
-
-
-# Function to detect vertical state changes
-def detect_vertical_state_changes(img, data_chunks):
-    width, _ = img.size
-    previous_state = None
-    state_changes = []
-    euclidian_threshold = 100
-
-    for i in range(len(data_chunks)):
-        y1, y2 = data_chunks[i]  # Unpack (start, end) directly
-        previous_state = None
-        for x in range(width):
-            # Check if all pixels in the column (x) are similar within this chunk
-            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < euclidian_threshold for y in
-                   range(y1, y2)):
-                current_state = "whitespace"
-            else:
-                current_state = "non-whitespace"
-            # Track state changes
-            if previous_state is None:
+    # For vertical analysis, scan chunks of data column by column 
+    # (Limits the scope of the vertical scan to the horizontal data chunks only, not the entire image)
+    elif mode == "vertical":
+        for i in range(len(horizontal_data_chunks)):
+            y1, y2 = horizontal_data_chunks[i]
+            previous_state = None
+            for x in range(width):
+                # Check if all pixels in the col are within the same range of RGB values and set state accordingly
+                if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < euclidian_threshold for y in
+                    range(y1, y2)):
+                    current_state = "whitespace"
+                else:
+                    current_state = "non-whitespace"
+                # Detect and save all state changes for future analysis
+                if previous_state is None:
+                    previous_state = current_state
+                if previous_state is not None and previous_state != current_state:
+                    state_changes.append((x, y1, y2, previous_state, current_state))
                 previous_state = current_state
-            if previous_state is not None and previous_state != current_state:
-                state_changes.append((x, y1, y2, previous_state, current_state))
-            previous_state = current_state
-
+    
     return state_changes
 
-
-# Go through the state changes to determine the relevant chunks of data (horizontal)
-def state_change_analysis(state_changes):
+# Go through the state changes to determine the relevant chunks of data
+def state_change_analysis(state_changes, mode):
     chunk_of_data = []
-    y1 = None
-    y2 = None
+    x1 = y1 = x2 = y2 = None
 
-    for i in range(len(state_changes)):
-        pos, prev_state, current_state = state_changes[i]
-        # Start of data chunk
-        if i == 0 and prev_state == "non-whitespace":
-            y1 = 0
-        if prev_state == "whitespace" and current_state == "non-whitespace":
-            y1 = pos
-        # End of data chunk
-        elif prev_state == "non-whitespace" and current_state == "whitespace":
-            y2 = pos
-        # Store chunk of data if both start and end are found
-        if y1 is not None and y2 is not None:
-            data_height = y2 - y1
-            if data_height > 3:  # Ignore single lines (likely a crease in the paper)
-                chunk_of_data.append([y1, y2])
-            y1 = None
-            y2 = None
-
+    if mode == "horizontal":
+        for i in range(len(state_changes)):
+            pos, prev_state, current_state = state_changes[i]
+            # Start of data chunk
+            if i == 0 and prev_state == "non-whitespace":
+                y1 = 0
+            if prev_state == "whitespace" and current_state == "non-whitespace":
+                y1 = pos
+            # End of data chunk
+            elif prev_state == "non-whitespace" and current_state == "whitespace":
+                y2 = pos
+            # Store chunk of data if both start and end are found
+            if y1 is not None and y2 is not None:
+                data_height = y2 - y1
+                if data_height > 3:  # Ignore single lines (likely a crease in the paper)
+                    chunk_of_data.append([y1, y2])
+                y1 = None
+                y2 = None
+    elif mode == "vertical":
+        for i in range(len(state_changes)):
+            x, y1, y2, prev_state, current_state = state_changes[i]
+            # Start of data chunk
+            if i == 0 and prev_state == "non-whitespace":
+                x1 = 0
+            if prev_state == "whitespace" and current_state == "non-whitespace":
+                x1 = x
+            # End of data chunk
+            elif prev_state == "non-whitespace" and current_state == "whitespace":
+                x2 = x
+            # Store chunk of data if both start and end are found
+            if x1 is not None and x2 is not None:
+                data_width = x2 - x1
+                if data_width > 3:  # Ignore single lines (likely a crease in the paper)
+                    chunk_of_data.append([x1, y1, x2, y2])
+                x1 = None
+                x2 = None
+                
     return chunk_of_data
-
-
-# Go through the state changes to determine the relevant chunks of data (vertical)
-def vertical_state_change_analysis(state_changes):
-    chunk_of_data = []
-    x1 = None
-    x2 = None
-
-    for i in range(len(state_changes)):
-        x, y1, y2, prev_state, current_state = state_changes[i]
-        # Start of data chunk
-        if i == 0 and prev_state == "non-whitespace":
-            x1 = 0
-        if prev_state == "whitespace" and current_state == "non-whitespace":
-            x1 = x
-        # End of data chunk
-        elif prev_state == "non-whitespace" and current_state == "whitespace":
-            x2 = x
-        # Store chunk of data if both start and end are found
-        if x1 is not None and x2 is not None:
-            data_width = x2 - x1
-            if data_width > 3:  # Ignore single lines (likely a crease in the paper)
-                chunk_of_data.append([x1, y1, x2, y2])
-            x1 = None
-            x2 = None
-
-    return chunk_of_data
-
 
 # Go through all the chunks of data and determine if the gap between them is within a certain threshold (horizontal analysis)
-def horizontal_threshold_analysis(chunk_of_data, img, mode, input_threshold):
-    width, height = img.size
+def horizontal_threshold_analysis(chunk_of_data, img, input_threshold):
     draw = ImageDraw.Draw(img)
     data_chunks = []
-    horizontal_chunks = []
-    vertical_chunks = []
-    #threshold = 45
     threshold = input_threshold
     y_start = 0
     y_end = 0
 
-    if mode == "horizontal":
-        pos = width
-        data_chunks = horizontal_chunks
-    elif mode == "vertical":
-        pos = height
-        data_chunks = vertical_chunks
-
     for i in range(1, len(chunk_of_data)):
         prev_data_start, prev_data_end = chunk_of_data[i - 1]
         curr_data_start, curr_data_end = chunk_of_data[i]
-        if i == 1:  # Draw a line at the start of the first data chunk in the document
+        if i == 1:  
             y_start = prev_data_start
+        
         # Determine if data chunks are close enough to each other based on threshold
         gap = curr_data_start - prev_data_end
         if gap <= threshold:
@@ -162,28 +133,17 @@ def horizontal_threshold_analysis(chunk_of_data, img, mode, input_threshold):
     return img, data_chunks
 
 
-def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data, img, mode, input_threshold):
-    width, height = img.size
+def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
     draw = ImageDraw.Draw(img)
-    #vertical_threshold = 70 
     threshold = input_threshold 
-    #threshold = input_threshold
 
     horizontal_row_complete = False
-    purple = (255, 0, 255)
     red = (255, 0, 0)
-    '''
-    green = (0, 255, 0)
-    blue = (0, 0, 255)
-    red = (255, 0, 0)
-    cyan = (0, 255, 255)
-    black = (0, 0, 0)
-    '''
     zone_start = True
 
     # Store vertical section data
     vertical_sections = []
-    x1, y1, x2, y2 = None, None, None, None
+    x1 = y1 = x2 = y2 = None
     current_section = None
 
     for i in range(1, len(vertical_chunk_of_data)):
@@ -194,7 +154,6 @@ def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data
             zone_start = True
 
         if (prev_y1 != curr_y1):
-            # print("Horizontal Row Complete")
             horizontal_row_complete = True
         else:
             horizontal_row_complete = False
@@ -243,24 +202,22 @@ def vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunk_of_data
 def image_scanner(image_path, output_json, output_image, horizontal_threshold, vertical_threshold):
     img = Image.open(image_path).convert("RGB")
     original_img = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(img)
-    line_positions = []
     horizontal_chunks = []
     vertical_chunks = []
 
     # Determine the state changes in the horizontal direction
     state_changes = detect_state_changes(img, "horizontal")
     # Go through the state changes to determine the relevant chunks of data
-    chunk_of_data = state_change_analysis(state_changes)
+    chunk_of_data = state_change_analysis(state_changes, "horizontal")
     # Document Analysis using Threshold
-    img, horizontal_chunks = horizontal_threshold_analysis(chunk_of_data, img, "horizontal", horizontal_threshold)
+    img, horizontal_chunks = horizontal_threshold_analysis(chunk_of_data, img, horizontal_threshold)
 
     # Determine the state changes in the vertical direction
-    vertical_state_changes = detect_vertical_state_changes(original_img, horizontal_chunks)
+    vertical_state_changes = detect_state_changes(original_img, "vertical", horizontal_chunks)
     # Go through the state changes to determine the relevant chunks of data
-    vertical_chunk_of_data = vertical_state_change_analysis(vertical_state_changes)
+    vertical_chunk_of_data = state_change_analysis(vertical_state_changes, "vertical")
     # Document Analysis using Threshold
-    img, vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, horizontal_chunks, img, "vertical", vertical_threshold)
+    img, vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, img, vertical_threshold)
 
     # Export the image with the lines drawn
     img.save(output_image)
@@ -315,9 +272,9 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
 
 
 initialize_scanner(
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
     #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase_page_4.png",
+    #"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase_page_4.png",
     r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\Test Results",
     45,  # Horizontal threshold
     210  # Vertical threshold - 70 worked well
