@@ -1,6 +1,19 @@
 let testData = {};
-let allSections = [];
+//let allSections = [];
 //let sectionsArray = [];
+
+
+function deleteAllBoxes() {
+  let boxes = document.getElementsByClassName("resizable");
+  while (boxes.length > 0) {
+    while(boxes[0].hasChildNodes()) {
+      boxes[0].removeChild(boxes[0].firstChild);
+    }
+    boxes[0].parentNode.removeChild(boxes[0]);
+  }
+
+
+}
 
 
 function storeAllSectionsData(sections) {
@@ -182,7 +195,7 @@ function createFromJson() {
   }).then(data => {
   
     testData = data;
-    allSections = storeAllSectionsData(testData.document_sections);
+    var allSections = storeAllSectionsData(testData.document_sections);
 
     var i = 0;
   allSections.forEach(section => {

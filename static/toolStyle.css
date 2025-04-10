@@ -25,11 +25,17 @@
   }
 
   #fileInput {
-    margin-top: 20px;
+    margin-top: 40px;
   }
 
   #uploadButton {
-    margin-top: 20px;
+    margin-top: 40px;
+  }
+  #saveButton {
+  margin-top: 40px;
+  }
+  #deleteAllButton {
+    margin-top: 40px;
   }
   
   .slidecontainer {

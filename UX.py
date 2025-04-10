@@ -12,6 +12,9 @@ def boxes():
 def Image_Scanner():
     # Get the uploaded file from the request
     file = request.files['file']
+    horizontal = int(request.form.get('slider1'))
+    vertical = int(request.form.get('slider2'))
+
 
     # If no file is provided, return an error
     if not file:
@@ -22,7 +25,7 @@ def Image_Scanner():
     file.save(filepath)
 
     # Now, call the ImageScanner.initialize_scanner method
-    result = ImageScanner.initialize_scanner(filepath, "./static")
+    result = ImageScanner.initialize_scanner(filepath, "./static", horizontal, vertical)
 
     # You can return a result to be displayed or a success message
     return "Image Scanned Successfully"

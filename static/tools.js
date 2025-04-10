@@ -26,6 +26,8 @@ function uploadImage() {
         // Send the image data to Flask
         const formData = new FormData();
         formData.append('file', file);  // Send the actual file object, not just the base64 string
+        formData.append('slider1', document.getElementById("myRangeHorizontal").value);  // append slider1 value
+        formData.append('slider2', document.getElementById("myRange").value);  // append slider2 value
         img.src = reader.result;
         //img.src = "static/"+file.name;
         fetch('/Image_Scanner', {

@@ -10,12 +10,12 @@
   <div id = 'tool_parent'> <!--this is the parent div that holds all buttons, sliders, etc-->
     <div class="slidecontainer" id="verticalSlide">
       <p>Vertical Threshold</p>
-      <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+      <input type="range" min="1" max="300" value="150" class="slider" id="myRange">
       <p>Value: <span id="demo"></span></p>
     </div>
     <div class="slidecontainer" id="horizontalSlide">
       <p>Horizontal Threshold</p>
-      <input type="range" min="1" max="100" value="50" class="slider" id="myRangeHorizontal">
+      <input type="range" min="1" max="300" value="150" class="slider" id="myRangeHorizontal">
       <p>Value: <span id="demoHorizontal"></span></p>
     </div>
     <button type="button" id="CreateBoxButton" class="buttons" onclick="createResizeHTML()">Create Box</button>
@@ -23,8 +23,9 @@
 
    
       <input type="file" name="file" id="fileInput" required>
-      <button type="button" id="uploadButton"onclick="uploadImage()">Upload File</button>
+      <button type="button" id="uploadButton"onclick="uploadImage()">Upload & Scan File</button>
       <button id="saveButton"onclick="saveJson()">Save Changes</button>
+      <button id="deleteAllButton" onclick="deleteAllBoxes()">Delete All Boxes</button>
 
     <!--<form method="POST" action="/Image_Scanner">
       <button type="submit">Scan Image</button>
