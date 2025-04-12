@@ -139,6 +139,9 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
 
     horizontal_row_complete = False
     red = (255, 0, 0)
+    green = (0, 255, 0)
+    blue = (0, 0, 255)
+    black = (0, 0, 0)    
     zone_start = True
 
     # Store vertical section data
@@ -153,7 +156,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
         if (i == 1):  # First data point is always the start of a zone
             zone_start = True
 
-        if (prev_y1 != curr_y1):
+        if (prev_y1 != curr_y1): #or i == len(vertical_chunk_of_data) - 1)
             horizontal_row_complete = True
         else:
             horizontal_row_complete = False
@@ -164,21 +167,20 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
             draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=red)
             x1, y1, x2, y2 = prev_x1, prev_y1, prev_x2, prev_y2
             current_section = {
-                'top_left_x': prev_x1,
-                'top_left_y': prev_y1,
+                'top_left_x': x1,
+                'top_left_y': y1,
                 #'width': not quite ready to determine width yet
-                'height': prev_y2 - prev_y1
+                'height': y2 - y1
             }
             zone_start = False
         # Last data in the set it always the end of a zone
-        if i == len(vertical_chunk_of_data) - 1:
-            # print("Reached the end ")
-            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
-            draw.line((x1, y1, curr_x2, y1), fill=red)
-            draw.line((x1, y2, curr_x2, y2), fill=red)
+        #BUG: Prematurely draws lines (claimacknowledgement) w/ 45/210 thresholds if it's the last data chunk AND the prev. horizontal row is comp
+        if i == len(vertical_chunk_of_data) -  1 and not horizontal_row_complete:
+            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=black)
+            draw.line((x1, y1, curr_x2, y1), fill=black)
+            draw.line((x1, y2, curr_x2, y2), fill=black)
             current_section['width'] = curr_x2 - x1
             vertical_sections.append(current_section)
-        # The end of a row always marks the completion of a zone
         elif horizontal_row_complete:
             draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
             draw.line((x1, y1, prev_x2, y1), fill=red)
@@ -194,6 +196,25 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
+
+        # Special case scenario: Only one chunk of data and it's the last one
+        if horizontal_row_complete and i == len(vertical_chunk_of_data) - 1:
+            print ("Time to get to work with this special case scenario")
+            #Draw a line at the start of the current data chunk
+            draw.line((curr_x1, curr_y1, curr_x1, curr_y2), fill=red)
+            # Draw a line at the end of the current data chunk
+            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
+            # Draw horizontal lines between them
+            draw.line((curr_x1, curr_y1, curr_x2, curr_y1), fill=red)
+            draw.line((curr_x1, curr_y2, curr_x2, curr_y2), fill=red)
+            # Store coordinates
+            current_section = {
+                'top_left_x': curr_x1,
+                'top_left_y': curr_y1,
+                'width': curr_x2 - curr_x1,
+                'height': curr_y2 - curr_y1
+            }
+            vertical_sections.append(current_section)
 
     return img, vertical_sections
 
@@ -250,7 +271,7 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
     # If the file is a pdf, convert it to images and analyze each image
     if ext == ".pdf":
         try:
-            images = convert_from_path(input_file_path, dpi=300)
+            images = convert_from_path(input_file_path, dpi=150)
             print(f"Converted {len(images)} page(s) from PDF.")
 
             for i, img in enumerate(images):
@@ -272,8 +293,9 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
 
 
 initialize_scanner(
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
+    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
+    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\claimacknowledgement.jpg",
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
     #"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase_page_4.png",
     r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\Test Results",
     45,  # Horizontal threshold
