@@ -1,11 +1,18 @@
 import time
 import json
 import os
+import cv2
+import numpy as np
 from PIL import Image, ImageDraw
 from pdf2image import convert_from_path
+from pyzbar.pyzbar import decode
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# Perfmance Monitoring
+# Performance Monitoring
 start_time = time.time()
+
+content_detection_flag = 1
 
 # Euclidean distance between two RGB values
 def euclidean_distance(rgb1, rgb2):
@@ -13,7 +20,8 @@ def euclidean_distance(rgb1, rgb2):
     r2, g2, b2 = rgb2
     return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
 
-# this function scans the image and identifies data-containing rows/columns
+
+# This function scans the image and identifies data-containing rows/columns
 def detect_state_changes(img, mode, horizontal_data_chunks=None):
     width, height = img.size
     euclidian_threshold = 100
@@ -35,7 +43,7 @@ def detect_state_changes(img, mode, horizontal_data_chunks=None):
             if previous_state is not None and previous_state != current_state:
                 state_changes.append((y, previous_state, current_state))
             previous_state = current_state
-    # For vertical analysis, scan chunks of data column by column 
+    # For vertical analysis, scan chunks of data column by column
     # (Limits the scope of the vertical scan to the horizontal data chunks only, not the entire image)
     elif mode == "vertical":
         for i in range(len(horizontal_data_chunks)):
@@ -44,7 +52,7 @@ def detect_state_changes(img, mode, horizontal_data_chunks=None):
             for x in range(width):
                 # Check if all pixels in the col are within the same range of RGB values and set state accordingly
                 if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < euclidian_threshold for y in
-                    range(y1, y2)):
+                       range(y1, y2)):
                     current_state = "whitespace"
                 else:
                     current_state = "non-whitespace"
@@ -54,8 +62,9 @@ def detect_state_changes(img, mode, horizontal_data_chunks=None):
                 if previous_state is not None and previous_state != current_state:
                     state_changes.append((x, y1, y2, previous_state, current_state))
                 previous_state = current_state
-    
+
     return state_changes
+
 
 # Go through the state changes to determine the relevant chunks of data
 def state_change_analysis(state_changes, mode):
@@ -98,8 +107,9 @@ def state_change_analysis(state_changes, mode):
                     chunk_of_data.append([x1, y1, x2, y2])
                 x1 = None
                 x2 = None
-                
+
     return chunk_of_data
+
 
 # Go through all the chunks of data and determine if the gap between them is within a certain threshold (horizontal analysis)
 def horizontal_threshold_analysis(chunk_of_data, img, input_threshold):
@@ -112,9 +122,9 @@ def horizontal_threshold_analysis(chunk_of_data, img, input_threshold):
     for i in range(1, len(chunk_of_data)):
         prev_data_start, prev_data_end = chunk_of_data[i - 1]
         curr_data_start, curr_data_end = chunk_of_data[i]
-        if i == 1:  
+        if i == 1:
             y_start = prev_data_start
-        
+
         # Determine if data chunks are close enough to each other based on threshold
         gap = curr_data_start - prev_data_end
         if gap <= threshold:
@@ -135,13 +145,13 @@ def horizontal_threshold_analysis(chunk_of_data, img, input_threshold):
 
 def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
     draw = ImageDraw.Draw(img)
-    threshold = input_threshold 
+    threshold = input_threshold
 
     horizontal_row_complete = False
     red = (255, 0, 0)
     green = (0, 255, 0)
     blue = (0, 0, 255)
-    black = (0, 0, 0)    
+    black = (0, 0, 0)
     zone_start = True
 
     # Store vertical section data
@@ -156,7 +166,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
         if (i == 1):  # First data point is always the start of a zone
             zone_start = True
 
-        if (prev_y1 != curr_y1): #or i == len(vertical_chunk_of_data) - 1)
+        if (prev_y1 != curr_y1):  # or i == len(vertical_chunk_of_data) - 1)
             horizontal_row_complete = True
         else:
             horizontal_row_complete = False
@@ -169,13 +179,13 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
             current_section = {
                 'top_left_x': x1,
                 'top_left_y': y1,
-                #'width': not quite ready to determine width yet
+                # 'width': not quite ready to determine width yet
                 'height': y2 - y1
             }
             zone_start = False
         # Last data in the set it always the end of a zone
-        #BUG: Prematurely draws lines (claimacknowledgement) w/ 45/210 thresholds if it's the last data chunk AND the prev. horizontal row is comp
-        if i == len(vertical_chunk_of_data) -  1 and not horizontal_row_complete:
+        # BUG: Prematurely draws lines (claimacknowledgement) w/ 45/210 thresholds if it's the last data chunk AND the prev. horizontal row is comp
+        if i == len(vertical_chunk_of_data) - 1 and not horizontal_row_complete:
             draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=black)
             draw.line((x1, y1, curr_x2, y1), fill=black)
             draw.line((x1, y2, curr_x2, y2), fill=black)
@@ -199,8 +209,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
 
         # Special case scenario: Only one chunk of data and it's the last one
         if horizontal_row_complete and i == len(vertical_chunk_of_data) - 1:
-            print ("Time to get to work with this special case scenario")
-            #Draw a line at the start of the current data chunk
+            # Draw a line at the start of the current data chunk
             draw.line((curr_x1, curr_y1, curr_x1, curr_y2), fill=red)
             # Draw a line at the end of the current data chunk
             draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
@@ -217,6 +226,33 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
             vertical_sections.append(current_section)
 
     return img, vertical_sections
+
+
+# Determine the content type and actual content in each section
+def detect_content(img, section):
+    x = section['top_left_x']
+    y = section['top_left_y']
+    width = section['width']
+    height = section['height']
+    # Crop the section from the image
+    section_img = img.crop((x, y, x + width, y + height))
+    # Convert section to openCV format
+    cv_image = cv2.cvtColor(np.array(section_img), cv2.COLOR_RGB2BGR)
+
+    # Check for barcodes
+    pil_section = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+    barcode = decode(pil_section)
+    if barcode:
+        return "barcode: " + barcode[0].type, barcode[0].data.decode('utf-8')
+
+    # Check for text with OCR
+    text = pytesseract.image_to_string(cv_image)
+    text = text if text else pytesseract.image_to_string(cv_image, config='--psm 10')
+    if len(text.strip()) > 5:
+        return "text", text
+
+    # If section does not contain a barcode or text assume it is an image
+    return "image", "undetermined"
 
 
 # Scan the image and produce a visual output of non-whitespace areas
@@ -243,7 +279,14 @@ def image_scanner(image_path, output_json, output_image, horizontal_threshold, v
     # Export the image with the lines drawn
     img.save(output_image)
 
-    # Create JSON output
+    # Add detected content data to each section
+    if content_detection_flag == 1:
+        for section in vertical_chunks:
+            content_type, content = detect_content(original_img, section)
+            section['content_type'] = content_type
+            section['content'] = content
+
+    # Output JSON data
     output_data = {
         "document_sections": [
             {
@@ -262,6 +305,9 @@ def image_scanner(image_path, output_json, output_image, horizontal_threshold, v
 
 
 def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, vertical_threshold):
+    # Ensure output directory exists, if not create it
+    os.makedirs(output_file_path, exist_ok=True)
+
     # Get the document name
     document_name = os.path.splitext(os.path.basename(input_file_path))[0]
 
@@ -280,29 +326,26 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
                 analyzed_image_path = os.path.join(output_file_path, f"{document_name}_page_{i + 1}_analyzed.png")
                 img.save(new_image_path, "PNG")
                 # Perform analysis on each page
-                image_scanner(new_image_path, json_output_path, analyzed_image_path, horizontal_threshold, vertical_threshold)
+                image_scanner(new_image_path, json_output_path, analyzed_image_path, horizontal_threshold,
+                              vertical_threshold)
         except Exception as e:
             print(f"Error converting PDF: {e}")
     # If the file is already an image, proceed with analysis
     elif ext in [".jpg", ".jpeg", ".png", ".bmp"]:
         json_output_path = os.path.join(output_file_path, f"{document_name}_analyzed.json")
-        analyzed_image_path = os.path.join(output_file_path,f"{document_name}_analyzed.png")
+        analyzed_image_path = os.path.join(output_file_path, f"{document_name}_analyzed.png")
         image_scanner(input_file_path, json_output_path, analyzed_image_path, horizontal_threshold, vertical_threshold)
     else:
         print(f"Skipping: Unsupported file type → {input_file_path}")
 
 
 initialize_scanner(
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\claimacknowledgement.jpg",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
-    #"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase_page_4.png",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\Test Results",
-    45,  # Horizontal threshold
-    210  # Vertical threshold - 70 worked well
-    )
 
-
+    r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\barcode-overview.png",
+    r"C:\Users\Mason\PycharmProjects\pythonProject6\results",
+    10,  # Horizontal threshold
+    50  # Vertical threshold - 70 worked well
+)
 
 # Performance Monitoring
 end_time = time.time()
