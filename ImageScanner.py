@@ -248,7 +248,7 @@ def detect_content(img, section):
     # Check for text with OCR
     text = pytesseract.image_to_string(cv_image)
     text = text if text else pytesseract.image_to_string(cv_image, config='--psm 10')
-    if len(text.strip()) > 5:
+    if len(text.strip()) > 3:
         return "text", text
 
     # If section does not contain a barcode or text assume it is an image
