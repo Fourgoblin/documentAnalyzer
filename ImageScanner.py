@@ -7,12 +7,12 @@ from PIL import Image, ImageDraw
 from pdf2image import convert_from_path
 from pyzbar.pyzbar import decode
 import pytesseract
+
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 # Performance Monitoring
 start_time = time.time()
 
-content_detection_flag = 1
 
 # Euclidean distance between two RGB values
 def euclidean_distance(rgb1, rgb2):
@@ -85,7 +85,7 @@ def state_change_analysis(state_changes, mode):
             # Store chunk of data if both start and end are found
             if y1 is not None and y2 is not None:
                 data_height = y2 - y1
-                if data_height > 3:  # Ignore single lines (likely a crease in the paper)
+                if data_height > 0:  # Ignore single lines (likely a crease in the paper)
                     chunk_of_data.append([y1, y2])
                 y1 = None
                 y2 = None
@@ -103,7 +103,7 @@ def state_change_analysis(state_changes, mode):
             # Store chunk of data if both start and end are found
             if x1 is not None and x2 is not None:
                 data_width = x2 - x1
-                if data_width > 3:  # Ignore single lines (likely a crease in the paper)
+                if data_width > 0:  # Ignore single lines (likely a crease in the paper)
                     chunk_of_data.append([x1, y1, x2, y2])
                 x1 = None
                 x2 = None
@@ -256,7 +256,8 @@ def detect_content(img, section):
 
 
 # Scan the image and produce a visual output of non-whitespace areas
-def image_scanner(image_path, output_json, output_image, horizontal_threshold, vertical_threshold):
+def image_scanner(image_path, output_json, output_image, horizontal_threshold, vertical_threshold,
+                  content_detection_toggle):
     img = Image.open(image_path).convert("RGB")
     original_img = Image.open(image_path).convert("RGB")
     horizontal_chunks = []
@@ -280,7 +281,7 @@ def image_scanner(image_path, output_json, output_image, horizontal_threshold, v
     img.save(output_image)
 
     # Add detected content data to each section
-    if content_detection_flag == 1:
+    if content_detection_toggle == 1:
         for section in vertical_chunks:
             content_type, content = detect_content(original_img, section)
             section['content_type'] = content_type
@@ -304,7 +305,8 @@ def image_scanner(image_path, output_json, output_image, horizontal_threshold, v
     print(f"Detected {len(vertical_chunks)} document sections")
 
 
-def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, vertical_threshold):
+def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, vertical_threshold,
+                       content_detection_toggle):
     # Ensure output directory exists, if not create it
     os.makedirs(output_file_path, exist_ok=True)
 
@@ -327,24 +329,26 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
                 img.save(new_image_path, "PNG")
                 # Perform analysis on each page
                 image_scanner(new_image_path, json_output_path, analyzed_image_path, horizontal_threshold,
-                              vertical_threshold)
+                              vertical_threshold, content_detection_toggle)
         except Exception as e:
             print(f"Error converting PDF: {e}")
     # If the file is already an image, proceed with analysis
     elif ext in [".jpg", ".jpeg", ".png", ".bmp"]:
         json_output_path = os.path.join(output_file_path, f"{document_name}_analyzed.json")
         analyzed_image_path = os.path.join(output_file_path, f"{document_name}_analyzed.png")
-        image_scanner(input_file_path, json_output_path, analyzed_image_path, horizontal_threshold, vertical_threshold)
+        image_scanner(input_file_path, json_output_path, analyzed_image_path, horizontal_threshold, vertical_threshold,
+                      content_detection_toggle)
     else:
         print(f"Skipping: Unsupported file type → {input_file_path}")
 
 
 initialize_scanner(
 
-    r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\barcode-overview.png",
+    r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\popular-types-of-barcodes.jpg",
     r"C:\Users\Mason\PycharmProjects\pythonProject6\results",
     10,  # Horizontal threshold
-    50  # Vertical threshold - 70 worked well
+    50,  # Vertical threshold - 70 worked well
+    0  # Turn content detection on or off
 )
 
 # Performance Monitoring
