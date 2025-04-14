@@ -50,6 +50,17 @@ function saveJson() {
     // Specify the file path (you can change the file name and path as needed)
     const filePath = 'static'+newPath;
 
+    fetch('/save-json', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(document_sections)
+    })
+    .then(response => response.json())
+    .then(data => console.log(data.message))
+    .catch(error => console.error('Error:', error));
+
     
 }
 

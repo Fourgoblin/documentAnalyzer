@@ -18,14 +18,17 @@
       <input type="range" min="1" max="300" value="150" class="slider" id="myRangeHorizontal">
       <p>Value: <span id="demoHorizontal"></span></p>
     </div>
-    <button type="button" id="CreateBoxButton" class="buttons" onclick="createResizeHTML()">Create Box</button>
-    <button type="button" id="DeleteBoxButton" class="buttons" onclick="deleteResizeHTML()">Delete Box</button>
+    
 
    
-      <input type="file" name="file" id="fileInput" required>
-      <button type="button" id="uploadButton"onclick="uploadImage()">Upload & Scan File</button>
-      <button id="saveButton"onclick="saveJson()">Save Changes</button>
-      <button id="deleteAllButton" onclick="deleteAllBoxes()">Delete All Boxes</button>
+      <div class="inputWrapper">
+        <input type="file" class = "buttons" name="file" id="fileInput" required>
+      </div>
+      <button type="button" class = "buttons" id="uploadButton"onclick="uploadImage()">Upload & Scan File</button>
+      <button type="button" id="CreateBoxButton" class="buttons" onclick="createResizeHTML()">Create Box</button>
+      <button type="button" id="DeleteBoxButton" class="buttons" onclick="deleteResizeHTML()">Delete Box</button>
+      <button id="saveButton" class = "buttons" onclick="saveJson()">Save Changes</button>
+      <button id="deleteAllButton" class = "buttons" onclick="deleteAllBoxes()">Delete All Boxes</button>
 
     <!--<form method="POST" action="/Image_Scanner">
       <button type="submit">Scan Image</button>

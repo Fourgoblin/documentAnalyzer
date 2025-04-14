@@ -1,7 +1,10 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import os
 import ImageScanner
 import webbrowser
+import json
+
+
 
 app = Flask(__name__)
 
@@ -28,6 +31,8 @@ def Image_Scanner():
 
     # Save the file temporarily (this path can be customized)
     filepath = os.path.join('static', file.filename)
+    global jsonFileName
+    jsonFileName = filepath
     file.save(filepath)
 
     # Now, call the ImageScanner.initialize_scanner method
@@ -35,6 +40,24 @@ def Image_Scanner():
 
     # You can return a result to be displayed or a success message
     return "Image Scanned Successfully"
+
+@app.route('/save-json', methods=['POST'])
+def save_json():
+    data = request.get_json()
+    global jsonFileName
+    newJsonFileName = jsonFileName
+    if '.' in jsonFileName:
+        newJsonFileName = jsonFileName.rsplit('.', 1)[0]  # Split off the extension
+        newJsonFileName += '_analyzed.json'
+        #print(jsonFileName)
+    if not data:
+        return jsonify({'message': 'no JSON data received'}), 400
+    
+    with open(newJsonFileName, 'w') as f:
+        json.dump(data, f, indent=4)
+
+    return jsonify({'message': 'JSON saved succesfully'})
+        
 
 if __name__ == '__main__':
     main()
