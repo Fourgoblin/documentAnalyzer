@@ -7,8 +7,6 @@ from PIL import Image, ImageDraw
 from pdf2image import convert_from_path
 from pyzbar.pyzbar import decode
 import pytesseract
-import threading
-import queue
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
@@ -211,7 +209,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
 
         # Special case scenario: Only one chunk of data and it's the last one
         if horizontal_row_complete and i == len(vertical_chunk_of_data) - 1:
-            # # Draw a line at the start of the current data chunk
+            # Draw a line at the start of the current data chunk
             # draw.line((curr_x1, curr_y1, curr_x1, curr_y2), fill=red)
             # # Draw a line at the end of the current data chunk
             # draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
@@ -229,18 +227,6 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
 
     return img, vertical_sections
 
-def detect_barcode(cv_image, result_queue):
-    pil_section = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
-    barcode = decode(pil_section)
-    if barcode:
-        result_queue.put(("barcode: " + barcode[0].type, barcode[0].data.decode('utf-8')))
-    
-def detect_text(cv_image, result_queue):
-    text = pytesseract.image_to_string(cv_image)
-    text = text if text else pytesseract.image_to_string(cv_image, config='--psm 10')
-    if len(text.strip()) > 3:
-        result_queue.put(("text", text))
-
 
 # Determine the content type and actual content in each section
 def detect_content(img, section):
@@ -253,27 +239,17 @@ def detect_content(img, section):
     # Convert section to openCV format
     cv_image = cv2.cvtColor(np.array(section_img), cv2.COLOR_RGB2BGR)
 
-    # For multi-threading - queues are safe to use between threads
-    result_queue = queue.Queue()
-
     # Check for barcodes
-    t1 = threading.Thread(target=detect_barcode, args=(cv_image,result_queue))
-    # Check for text with OCR    
-    t2 = threading.Thread(target=detect_text, args=(cv_image,result_queue))
+    pil_section = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+    barcode = decode(pil_section)
+    if barcode:
+        return "barcode: " + barcode[0].type, barcode[0].data.decode('utf-8')
 
-    t1.start()
-    t2.start()
-    t1.join()
-    t2.join()
-
-    data = None
-
-    while not result_queue.empty():
-        result, data = result_queue.get()
-        if "text" in result:
-            return result, data
-        elif "barcode" in result:
-            return result, data
+    # Check for text with OCR
+    text = pytesseract.image_to_string(cv_image)
+    text = text if text else pytesseract.image_to_string(cv_image, config='--psm 10')
+    if len(text.strip()) > 3:
+        return "text", text
 
     # If section does not contain a barcode or text assume it is an image
     return "image", "undetermined"
