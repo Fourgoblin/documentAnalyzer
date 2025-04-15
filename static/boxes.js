@@ -155,18 +155,45 @@ function makeResizableDiv(div) {
 function createResizeHTML() { //bug arises of multiple boxes being created with the same ID only if the box numbers get out of order (i.e if 1 and 3 exist it will get stuck making 2s as it always breaks at 2)
 
   var resizeList = document.getElementsByClassName("resizable"); //get current number of boxes
-  var i = 1;
+  //var i = 1;
   var checkName = "";
+  var idList = [];
+  var missingList = [];
+  var i = 1;
+  var missingNum = 0;
   for(let resizable of resizeList) {
-    checkName = "section_" + i.toString();
-    if (resizable.id !== checkName) {
-      break;
+    idList.push(resizable.id);
+  }
+  for (i; i <= idList.length; i += 1) {
+    if (idList.includes("section_"+i.toString())) {
+
     }
     else {
-      i += 1;
+      missingList.push(i);
     }
-  };
-  checkName = "section_" + i.toString();
+
+   
+    
+    
+  }
+
+  if (missingList.length === 0) {
+    missingNum = idList.length + 1;
+  }
+  else {
+    missingNum = missingList[0];
+  }
+    //checkName = "section_" + i.toString();
+    //if (resizable.id !== checkName) {
+   //   idList.push(i);
+   // }
+    
+    //i += 1;
+    
+  
+
+  
+  checkName = "section_" + missingNum.toString();
   var resizeCount = resizeList.length + 1; //add 1 to account for the new box being created, issue may arise if one is deleted and then created as number may be off/reused
   var resizeCountStr = resizeCount.toString();
 
@@ -176,7 +203,7 @@ function createResizeHTML() { //bug arises of multiple boxes being created with 
 
   var resizers = document.createElement('div');
   resizers.setAttribute("class", "resizers");
-  resizers.setAttribute('id', 'resizers'+i.toString());
+  resizers.setAttribute('id', 'resizers'+missingNum.toString());
 
   var topLeft = document.createElement('div');
   topLeft.setAttribute('class', 'resizer top-left');
@@ -194,10 +221,10 @@ function createResizeHTML() { //bug arises of multiple boxes being created with 
 
   document.getElementById("image_holder").appendChild(div);
   document.getElementById(checkName).appendChild(resizers); 
-  document.getElementById("resizers"+i.toString()).appendChild(topLeft);
-  document.getElementById("resizers"+i.toString()).appendChild(topRight);
-  document.getElementById("resizers"+i.toString()).appendChild(bottomLeft);
-  document.getElementById("resizers"+i.toString()).appendChild(bottomRight);
+  document.getElementById("resizers"+missingNum.toString()).appendChild(topLeft);
+  document.getElementById("resizers"+missingNum.toString()).appendChild(topRight);
+  document.getElementById("resizers"+missingNum.toString()).appendChild(bottomLeft);
+  document.getElementById("resizers"+missingNum.toString()).appendChild(bottomRight);
 
   makeResizableDiv('.resizable')
 }
