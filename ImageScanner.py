@@ -7,6 +7,8 @@ from PIL import Image, ImageDraw
 from pdf2image import convert_from_path
 from pyzbar.pyzbar import decode
 import pytesseract
+import threading
+import queue
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
@@ -174,7 +176,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
         gap = curr_x1 - prev_x2
 
         if zone_start:
-            draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=red)
+            #draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=red)
             x1, y1, x2, y2 = prev_x1, prev_y1, prev_x2, prev_y2
             current_section = {
                 'top_left_x': x1,
@@ -186,36 +188,36 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
         # Last data in the set it always the end of a zone
         # BUG: Prematurely draws lines (claimacknowledgement) w/ 45/210 thresholds if it's the last data chunk AND the prev. horizontal row is comp
         if i == len(vertical_chunk_of_data) - 1 and not horizontal_row_complete:
-            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=black)
-            draw.line((x1, y1, curr_x2, y1), fill=black)
-            draw.line((x1, y2, curr_x2, y2), fill=black)
+            # draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=black)
+            # draw.line((x1, y1, curr_x2, y1), fill=black)
+            # draw.line((x1, y2, curr_x2, y2), fill=black)
             current_section['width'] = curr_x2 - x1
             vertical_sections.append(current_section)
         elif horizontal_row_complete:
-            draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
-            draw.line((x1, y1, prev_x2, y1), fill=red)
-            draw.line((x1, y2, prev_x2, y2), fill=red)
+            # draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
+            # draw.line((x1, y1, prev_x2, y1), fill=red)
+            # draw.line((x1, y2, prev_x2, y2), fill=red)
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
         # Large gap also marks the completion of a zone
         elif gap > threshold:
-            draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
-            draw.line((x1, y1, prev_x2, y1), fill=red)
-            draw.line((x1, y2, prev_x2, y2), fill=red)
+            # draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
+            # draw.line((x1, y1, prev_x2, y1), fill=red)
+            # draw.line((x1, y2, prev_x2, y2), fill=red)
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
 
         # Special case scenario: Only one chunk of data and it's the last one
         if horizontal_row_complete and i == len(vertical_chunk_of_data) - 1:
-            # Draw a line at the start of the current data chunk
-            draw.line((curr_x1, curr_y1, curr_x1, curr_y2), fill=red)
-            # Draw a line at the end of the current data chunk
-            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
-            # Draw horizontal lines between them
-            draw.line((curr_x1, curr_y1, curr_x2, curr_y1), fill=red)
-            draw.line((curr_x1, curr_y2, curr_x2, curr_y2), fill=red)
+            # # Draw a line at the start of the current data chunk
+            # draw.line((curr_x1, curr_y1, curr_x1, curr_y2), fill=red)
+            # # Draw a line at the end of the current data chunk
+            # draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
+            # # Draw horizontal lines between them
+            # draw.line((curr_x1, curr_y1, curr_x2, curr_y1), fill=red)
+            # draw.line((curr_x1, curr_y2, curr_x2, curr_y2), fill=red)
             # Store coordinates
             current_section = {
                 'top_left_x': curr_x1,
@@ -226,6 +228,18 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
             vertical_sections.append(current_section)
 
     return img, vertical_sections
+
+def detect_barcode(cv_image, result_queue):
+    pil_section = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+    barcode = decode(pil_section)
+    if barcode:
+        result_queue.put(("barcode: " + barcode[0].type, barcode[0].data.decode('utf-8')))
+    
+def detect_text(cv_image, result_queue):
+    text = pytesseract.image_to_string(cv_image)
+    text = text if text else pytesseract.image_to_string(cv_image, config='--psm 10')
+    if len(text.strip()) > 3:
+        result_queue.put(("text", text))
 
 
 # Determine the content type and actual content in each section
@@ -239,17 +253,27 @@ def detect_content(img, section):
     # Convert section to openCV format
     cv_image = cv2.cvtColor(np.array(section_img), cv2.COLOR_RGB2BGR)
 
-    # Check for barcodes
-    pil_section = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
-    barcode = decode(pil_section)
-    if barcode:
-        return "barcode: " + barcode[0].type, barcode[0].data.decode('utf-8')
+    # For multi-threading - queues are safe to use between threads
+    result_queue = queue.Queue()
 
-    # Check for text with OCR
-    text = pytesseract.image_to_string(cv_image)
-    text = text if text else pytesseract.image_to_string(cv_image, config='--psm 10')
-    if len(text.strip()) > 3:
-        return "text", text
+    # Check for barcodes
+    t1 = threading.Thread(target=detect_barcode, args=(cv_image,result_queue))
+    # Check for text with OCR    
+    t2 = threading.Thread(target=detect_text, args=(cv_image,result_queue))
+
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+    data = None
+
+    while not result_queue.empty():
+        result, data = result_queue.get()
+        if "text" in result:
+            return result, data
+        elif "barcode" in result:
+            return result, data
 
     # If section does not contain a barcode or text assume it is an image
     return "image", "undetermined"
@@ -278,7 +302,7 @@ def image_scanner(image_path, output_json, output_image, horizontal_threshold, v
     img, vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, img, vertical_threshold)
 
     # Export the image with the lines drawn
-    img.save(output_image)
+    #img.save(output_image)
 
     # Add detected content data to each section
     if content_detection_toggle == 1:
@@ -344,8 +368,11 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
 
 initialize_scanner(
 
-    r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\popular-types-of-barcodes.jpg",
-    r"C:\Users\Mason\PycharmProjects\pythonProject6\results",
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
+    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\claimacknowledgement.jpg",
+    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
+    #"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase_page_4.png",
+    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\Test Results",
     10,  # Horizontal threshold
     50,  # Vertical threshold - 70 worked well
     0  # Turn content detection on or off
