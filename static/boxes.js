@@ -61,7 +61,7 @@ function saveJson() {
     .then(data => console.log(data.message))
     .catch(error => console.error('Error:', error));
 
-    
+    textObj.textContent = "JSON Saved";
 }
 
 
@@ -324,7 +324,11 @@ function createFromJson() {
   i = i+1;
 
   });
+
+  textObj.textContent = "Image Scanned";
   makeResizableDiv('.resizable');
+
+  //change to "image scanned"
 }
 
 

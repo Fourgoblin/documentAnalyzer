@@ -1,3 +1,4 @@
+let textObj = document.getElementById("statusText")
 var verticalSlider = document.getElementById("myRange");
 var output = document.getElementById("demo");
 output.innerHTML = verticalSlider.value; // Display the default verticalSlider value
@@ -17,6 +18,8 @@ horizontalSlider.oninput = function() {
 }
 let newPath = ""
 function uploadImage() {
+    deleteAllBoxes();
+    textObj.textContent = "Scanning Image";
     const file = document.getElementById('fileInput').files[0];
     const reader = new FileReader();
     newPath = modifyFileName(file.name);
@@ -44,6 +47,7 @@ function uploadImage() {
         })
         .catch(error => {
             console.error('Error uploading image:', error);
+            textObj.textContent = "Upload Error";
         });
         
     }
