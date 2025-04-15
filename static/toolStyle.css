@@ -11,14 +11,21 @@
   
   .buttons {
     margin-top: 40px;
+    background-color: #04AA6D; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
   }
 
   #fileInput {
     margin-top: 60px;
-    width: 100%;
+    width: 50%;
     box-sizing: border-box;
     display: flex;
-    margin-left: 40%;
   }
   .inputWrapper {
     width: 100%;

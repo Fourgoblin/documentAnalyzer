@@ -152,15 +152,31 @@ function makeResizableDiv(div) {
 });
 }
 
-function createResizeHTML() { //currently only creates one box, should be scalable with changes to naming logic
+function createResizeHTML() { //bug arises of multiple boxes being created with the same ID only if the box numbers get out of order (i.e if 1 and 3 exist it will get stuck making 2s as it always breaks at 2)
+
+  var resizeList = document.getElementsByClassName("resizable"); //get current number of boxes
+  var i = 1;
+  var checkName = "";
+  for(let resizable of resizeList) {
+    checkName = "section_" + i.toString();
+    if (resizable.id !== checkName) {
+      break;
+    }
+    else {
+      i += 1;
+    }
+  };
+  checkName = "section_" + i.toString();
+  var resizeCount = resizeList.length + 1; //add 1 to account for the new box being created, issue may arise if one is deleted and then created as number may be off/reused
+  var resizeCountStr = resizeCount.toString();
 
   var div = document.createElement("div");
   div.setAttribute("class", "resizable");
-  div.setAttribute('id', 'resizable1');
+  div.setAttribute('id', checkName);
 
   var resizers = document.createElement('div');
   resizers.setAttribute("class", "resizers");
-  resizers.setAttribute('id', 'resizers1');
+  resizers.setAttribute('id', 'resizers'+i.toString());
 
   var topLeft = document.createElement('div');
   topLeft.setAttribute('class', 'resizer top-left');
@@ -177,18 +193,36 @@ function createResizeHTML() { //currently only creates one box, should be scalab
   div.style.height = '100px';
 
   document.getElementById("image_holder").appendChild(div);
-  document.getElementById("resizable1").appendChild(resizers);
-  document.getElementById("resizers1").appendChild(topLeft);
-  document.getElementById("resizers1").appendChild(topRight);
-  document.getElementById("resizers1").appendChild(bottomLeft);
-  document.getElementById("resizers1").appendChild(bottomRight);
+  document.getElementById(checkName).appendChild(resizers); 
+  document.getElementById("resizers"+i.toString()).appendChild(topLeft);
+  document.getElementById("resizers"+i.toString()).appendChild(topRight);
+  document.getElementById("resizers"+i.toString()).appendChild(bottomLeft);
+  document.getElementById("resizers"+i.toString()).appendChild(bottomRight);
 
   makeResizableDiv('.resizable')
 }
 
+let lastClickedParent = null;
+let lastClickedChild = null;
+
+document.addEventListener('click', function(event) {
+  const clickedElement = event.target;
+  const clickedParent = clickedElement.parentElement;
+  if (clickedParent.classList.contains('resizable')) {
+    if (lastClickedChild) {
+      lastClickedChild.style.border = "2px solid #4286f4"
+    }  
+      
+      lastClickedChild = clickedElement;
+      lastClickedParent = clickedParent;
+      clickedElement.style.border = "2px solid #6821bf"
+  }
+});
+
+
 function deleteResizeHTML() { //functions, but will need a way to choose which box to delete
 
-  var childList = document.getElementById("resizable1");
+  var childList = document.getElementById(lastClickedParent.id);
   while (childList.hasChildNodes()) {
     childList.removeChild(childList.firstChild)
   }
@@ -292,3 +326,6 @@ function createFromJson() {
   });
   makeResizableDiv('.resizable');
 }
+
+
+
