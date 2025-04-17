@@ -259,7 +259,6 @@ def section_outlines(image_path, json_data_path, output_image_path):
 
     # Save the image with outlines drawn
     img.save(output_image_path)
-    print(f"Section outlines drawn and saved to {output_image_path}")
 
 
 # Scan the image and produce a visual output of non-whitespace areas
