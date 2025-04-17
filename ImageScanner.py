@@ -112,8 +112,7 @@ def state_change_analysis(state_changes, mode):
 
 
 # Go through all the chunks of data and determine if the gap between them is within a certain threshold (horizontal analysis)
-def horizontal_threshold_analysis(chunk_of_data, img, input_threshold):
-    draw = ImageDraw.Draw(img)
+def horizontal_threshold_analysis(chunk_of_data, input_threshold):
     data_chunks = []
     threshold = input_threshold
     y_start = 0
@@ -140,18 +139,13 @@ def horizontal_threshold_analysis(chunk_of_data, img, input_threshold):
     y_end = curr_data_end
     data_chunks.append((y_start, y_end))
 
-    return img, data_chunks
+    return data_chunks
 
 
-def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
-    draw = ImageDraw.Draw(img)
+def vertical_threshold_analysis(vertical_chunk_of_data, input_threshold):
     threshold = input_threshold
 
     horizontal_row_complete = False
-    red = (255, 0, 0)
-    green = (0, 255, 0)
-    blue = (0, 0, 255)
-    black = (0, 0, 0)
     zone_start = True
 
     # Store vertical section data
@@ -174,7 +168,6 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
         gap = curr_x1 - prev_x2
 
         if zone_start:
-            #draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=red)
             x1, y1, x2, y2 = prev_x1, prev_y1, prev_x2, prev_y2
             current_section = {
                 'top_left_x': x1,
@@ -184,38 +177,21 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
             }
             zone_start = False
         # Last data in the set it always the end of a zone
-        # BUG: Prematurely draws lines (claimacknowledgement) w/ 45/210 thresholds if it's the last data chunk AND the prev. horizontal row is comp
         if i == len(vertical_chunk_of_data) - 1 and not horizontal_row_complete:
-            # draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=black)
-            # draw.line((x1, y1, curr_x2, y1), fill=black)
-            # draw.line((x1, y2, curr_x2, y2), fill=black)
             current_section['width'] = curr_x2 - x1
             vertical_sections.append(current_section)
         elif horizontal_row_complete:
-            # draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
-            # draw.line((x1, y1, prev_x2, y1), fill=red)
-            # draw.line((x1, y2, prev_x2, y2), fill=red)
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
         # Large gap also marks the completion of a zone
         elif gap > threshold:
-            # draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
-            # draw.line((x1, y1, prev_x2, y1), fill=red)
-            # draw.line((x1, y2, prev_x2, y2), fill=red)
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
 
         # Special case scenario: Only one chunk of data and it's the last one
         if horizontal_row_complete and i == len(vertical_chunk_of_data) - 1:
-            # Draw a line at the start of the current data chunk
-            # draw.line((curr_x1, curr_y1, curr_x1, curr_y2), fill=red)
-            # # Draw a line at the end of the current data chunk
-            # draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
-            # # Draw horizontal lines between them
-            # draw.line((curr_x1, curr_y1, curr_x2, curr_y1), fill=red)
-            # draw.line((curr_x1, curr_y2, curr_x2, curr_y2), fill=red)
             # Store coordinates
             current_section = {
                 'top_left_x': curr_x1,
@@ -225,7 +201,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
             }
             vertical_sections.append(current_section)
 
-    return img, vertical_sections
+    return vertical_sections
 
 
 # Determine the content type and actual content in each section
@@ -255,30 +231,55 @@ def detect_content(img, section):
     return "image", "undetermined"
 
 
+# Draw the section outlines based on JSON data
+def section_outlines(image_path, json_data_path, output_image_path):
+    # Load the original image
+    img = Image.open(image_path).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # Load the JSON data
+    with open(json_data_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    # Colors for drawing
+    red = (255, 0, 0)
+
+    # Draw outlines for each section
+    for section in data["document_sections"]:
+        x1 = section["top_left_x"]
+        y1 = section["top_left_y"]
+        width = section["width"]
+        height = section["height"]
+
+        # Draw outline
+        draw.line((x1, y1, x1 + width, y1), fill=red)  # Top line
+        draw.line((x1, y1 + height, x1 + width, y1 + height), fill=red)  # Bottom line
+        draw.line((x1, y1, x1, y1 + height), fill=red)  # Left line
+        draw.line((x1 + width, y1, x1 + width, y1 + height), fill=red)  # Right line
+
+    # Save the image with outlines drawn
+    img.save(output_image_path)
+    print(f"Section outlines drawn and saved to {output_image_path}")
+
+
 # Scan the image and produce a visual output of non-whitespace areas
-def image_scanner(image_path, output_json, output_image, horizontal_threshold, vertical_threshold,
-                  content_detection_toggle):
+def image_scanner(image_path, output_json, horizontal_threshold, vertical_threshold, content_detection_toggle):
     img = Image.open(image_path).convert("RGB")
     original_img = Image.open(image_path).convert("RGB")
-    horizontal_chunks = []
-    vertical_chunks = []
 
     # Determine the state changes in the horizontal direction
     state_changes = detect_state_changes(img, "horizontal")
     # Go through the state changes to determine the relevant chunks of data
     chunk_of_data = state_change_analysis(state_changes, "horizontal")
     # Document Analysis using Threshold
-    img, horizontal_chunks = horizontal_threshold_analysis(chunk_of_data, img, horizontal_threshold)
+    horizontal_chunks = horizontal_threshold_analysis(chunk_of_data, horizontal_threshold)
 
     # Determine the state changes in the vertical direction
     vertical_state_changes = detect_state_changes(original_img, "vertical", horizontal_chunks)
     # Go through the state changes to determine the relevant chunks of data
     vertical_chunk_of_data = state_change_analysis(vertical_state_changes, "vertical")
     # Document Analysis using Threshold
-    img, vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, img, vertical_threshold)
-
-    # Export the image with the lines drawn
-    #img.save(output_image)
+    vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, vertical_threshold)
 
     # Add detected content data to each section
     if content_detection_toggle == 1:
@@ -304,9 +305,11 @@ def image_scanner(image_path, output_json, output_image, horizontal_threshold, v
     # Print the number of sections detected
     print(f"Detected {len(vertical_chunks)} document sections")
 
+    return output_data
+
 
 def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, vertical_threshold,
-                       content_detection_toggle):
+                       content_detection_toggle, section_outlines_toggle):
     # Ensure output directory exists, if not create it
     os.makedirs(output_file_path, exist_ok=True)
 
@@ -328,30 +331,34 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
                 analyzed_image_path = os.path.join(output_file_path, f"{document_name}_page_{i + 1}_analyzed.png")
                 img.save(new_image_path, "PNG")
                 # Perform analysis on each page
-                image_scanner(new_image_path, json_output_path, analyzed_image_path, horizontal_threshold,
-                              vertical_threshold, content_detection_toggle)
+                image_scanner(new_image_path, json_output_path, horizontal_threshold, vertical_threshold,
+                              content_detection_toggle)
+                # Draw the section outlines using the JSON data
+                if section_outlines_toggle == 1:
+                    section_outlines(new_image_path, json_output_path, analyzed_image_path)
         except Exception as e:
             print(f"Error converting PDF: {e}")
     # If the file is already an image, proceed with analysis
     elif ext in [".jpg", ".jpeg", ".png", ".bmp"]:
         json_output_path = os.path.join(output_file_path, f"{document_name}_analyzed.json")
         analyzed_image_path = os.path.join(output_file_path, f"{document_name}_analyzed.png")
-        image_scanner(input_file_path, json_output_path, analyzed_image_path, horizontal_threshold, vertical_threshold,
+        # Perform analysis and save JSON data
+        image_scanner(input_file_path, json_output_path, horizontal_threshold, vertical_threshold,
                       content_detection_toggle)
+        # Draw the section outlines using the JSON data
+        if section_outlines_toggle == 1:
+            section_outlines(input_file_path, json_output_path, analyzed_image_path)
     else:
         print(f"Skipping: Unsupported file type → {input_file_path}")
 
 
 initialize_scanner(
-
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\ReleaseAndAuthorizationOfPayment-2.jpg",
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\claimacknowledgement.jpg",
-    #r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase.pdf", 
-    #"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\CleanDocumentAnalysisBase_page_4.png",
-    r"C:\Users\jovan\OneDrive\Desktop\CS499\PDF Scanner\cs-499 Test Cases\Test Results",
+    r"C:\Users\Mason\PycharmProjects\pythonProject7\cs-499 Test Cases\scan0002.jpg",
+    r"C:\Users\Mason\PycharmProjects\pythonProject7\results",
     10,  # Horizontal threshold
     50,  # Vertical threshold - 70 worked well
-    0  # Turn content detection on or off
+    0,  # Turn content detection on or off
+    0  # Turn section outline png output on or off
 )
 
 # Performance Monitoring
