@@ -216,8 +216,7 @@ def detect_content(img, section):
     cv_image = cv2.cvtColor(np.array(section_img), cv2.COLOR_RGB2BGR)
 
     # Check for barcodes
-    pil_section = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
-    barcode = decode(pil_section)
+    barcode = decode(section_img)
     if barcode:
         return "barcode: " + barcode[0].type, barcode[0].data.decode('utf-8')
 
