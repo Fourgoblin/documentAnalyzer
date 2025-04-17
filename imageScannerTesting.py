@@ -175,7 +175,7 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
         gap = curr_x1 - prev_x2
 
         if zone_start:
-            #draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=red)
+            draw.line((prev_x1, prev_y1, prev_x1, prev_y2), fill=red)
             x1, y1, x2, y2 = prev_x1, prev_y1, prev_x2, prev_y2
             current_section = {
                 'top_left_x': x1,
@@ -187,23 +187,23 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
         # Last data in the set it always the end of a zone
         # BUG: Prematurely draws lines (claimacknowledgement) w/ 45/210 thresholds if it's the last data chunk AND the prev. horizontal row is comp
         if i == len(vertical_chunk_of_data) - 1 and not horizontal_row_complete:
-            # draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=black)
-            # draw.line((x1, y1, curr_x2, y1), fill=black)
-            # draw.line((x1, y2, curr_x2, y2), fill=black)
+            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=black)
+            draw.line((x1, y1, curr_x2, y1), fill=black)
+            draw.line((x1, y2, curr_x2, y2), fill=black)
             current_section['width'] = curr_x2 - x1
             vertical_sections.append(current_section)
         elif horizontal_row_complete:
-            # draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
-            # draw.line((x1, y1, prev_x2, y1), fill=red)
-            # draw.line((x1, y2, prev_x2, y2), fill=red)
+            draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
+            draw.line((x1, y1, prev_x2, y1), fill=red)
+            draw.line((x1, y2, prev_x2, y2), fill=red)
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
         # Large gap also marks the completion of a zone
         elif gap > threshold:
-            # draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
-            # draw.line((x1, y1, prev_x2, y1), fill=red)
-            # draw.line((x1, y2, prev_x2, y2), fill=red)
+            draw.line((prev_x2, prev_y1, prev_x2, prev_y2), fill=red)
+            draw.line((x1, y1, prev_x2, y1), fill=red)
+            draw.line((x1, y2, prev_x2, y2), fill=red)
             current_section['width'] = prev_x2 - x1
             vertical_sections.append(current_section)
             zone_start = True
@@ -211,12 +211,12 @@ def vertical_threshold_analysis(vertical_chunk_of_data, img, input_threshold):
         # Special case scenario: Only one chunk of data and it's the last one
         if horizontal_row_complete and i == len(vertical_chunk_of_data) - 1:
             # Draw a line at the start of the current data chunk
-            # draw.line((curr_x1, curr_y1, curr_x1, curr_y2), fill=red)
+            draw.line((curr_x1, curr_y1, curr_x1, curr_y2), fill=red)
             # # Draw a line at the end of the current data chunk
-            # draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
+            draw.line((curr_x2, curr_y1, curr_x2, curr_y2), fill=red)
             # # Draw horizontal lines between them
-            # draw.line((curr_x1, curr_y1, curr_x2, curr_y1), fill=red)
-            # draw.line((curr_x1, curr_y2, curr_x2, curr_y2), fill=red)
+            draw.line((curr_x1, curr_y1, curr_x2, curr_y1), fill=red)
+            draw.line((curr_x1, curr_y2, curr_x2, curr_y2), fill=red)
             # Store coordinates
             current_section = {
                 'top_left_x': curr_x1,
@@ -279,7 +279,7 @@ def image_scanner(image_path, output_json, output_image, horizontal_threshold, v
     img, vertical_chunks = vertical_threshold_analysis(vertical_chunk_of_data, img, vertical_threshold)
 
     # Export the image with the lines drawn
-    #img.save(output_image)
+    img.save(output_image)
 
     # Add detected content data to each section
     if content_detection_toggle == 1:
