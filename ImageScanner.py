@@ -3,6 +3,7 @@ import json
 import os
 import cv2
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 from pdf2image import convert_from_path
 from pyzbar.pyzbar import decode
 import pytesseract
@@ -80,7 +81,7 @@ def state_change_analysis(state_changes, mode):
             # Store chunk of data if both start and end are found
             if y1 is not None and y2 is not None:
                 data_height = y2 - y1
-                if data_height > 0:  # Ignore single lines (likely a crease in the paper)
+                if data_height > 1:  # Ignore single lines (likely a crease in the paper)
                     chunk_of_data.append([y1, y2])
                 y1 = None
                 y2 = None
@@ -98,7 +99,7 @@ def state_change_analysis(state_changes, mode):
             # Store chunk of data if both start and end are found
             if x1 is not None and x2 is not None:
                 data_width = x2 - x1
-                if data_width > 0:  # Ignore single lines (likely a crease in the paper)
+                if data_width > 1:  # Ignore single lines (likely a crease in the paper)
                     chunk_of_data.append([x1, y1, x2, y2])
                 x1 = None
                 x2 = None
@@ -194,6 +195,18 @@ def vertical_threshold_analysis(vertical_chunk_of_data, input_threshold):
     return vertical_sections
 
 
+# Content detection threading wrapper
+def parallel_content_detection(img, sections):
+    def process(section):
+        content_type, content = detect_content(img, section)
+        section['content_type'] = content_type
+        section['content'] = content
+        return section
+
+    with ThreadPoolExecutor() as executor:
+        return list(executor.map(process, sections))
+
+
 # Determine the content type and actual content in each section
 def detect_content(img, section):
     x = section['top_left_x']
@@ -262,10 +275,7 @@ def image_scanner(image_path, output_json, horizontal_threshold, vertical_thresh
 
     # Add detected content data to each section
     if content_detection_toggle == 1:
-        for section in vertical_chunks:
-            content_type, content = detect_content(original_img, section)
-            section['content_type'] = content_type
-            section['content'] = content
+        vertical_chunks = parallel_content_detection(original_img, vertical_chunks)
 
     # Output JSON data
     output_data = {
@@ -332,8 +342,8 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
 
 
 initialize_scanner(
-    r"C:\Users\Mason\PycharmProjects\pythonProject7\cs-499 Test Cases\ClaimAcknowledgement.jpg",
-    r"C:\Users\Mason\PycharmProjects\pythonProject7\results",
+    r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\popular-types-of-barcodes.jpg",
+    r"C:\Users\Mason\PycharmProjects\pythonProject6\results",
     20,  # Horizontal threshold
     40,  # Vertical threshold - 70 worked well
     0,  # Turn content detection on or off
