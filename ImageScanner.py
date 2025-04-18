@@ -3,7 +3,6 @@ import json
 import os
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw
 from pdf2image import convert_from_path
 from pyzbar.pyzbar import decode
 import pytesseract
@@ -14,54 +13,50 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 start_time = time.time()
 
 
-# Euclidean distance between two RGB values
-def euclidean_distance(rgb1, rgb2):
-    r1, g1, b1 = rgb1
-    r2, g2, b2 = rgb2
-    return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
-
-
 # This function scans the image and identifies data-containing rows/columns
 def detect_state_changes(img, mode, horizontal_data_chunks=None):
-    width, height = img.size
-    euclidian_threshold = 100
+    height, width = img.shape[:2]
+    # Number of edge pixels to consider a row/col as "non-whitespace"
+    edge_threshold = 2 # Adjusting this value may help with troubleshooting
     state_changes = []
     previous_state = None
 
-    # For horizontal analysis, scan document row by row
+    # Convert to grayscale and save for debugging
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # cv2.imwrite("debug_gray.png", gray)
+
+    # Apply Gaussian blur and save
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    # cv2.imwrite("debug_blurred.png", blurred)
+
+    # Apply Canny edge detection and save
+    edges = cv2.Canny(blurred, 50, 150)
+    # cv2.imwrite(f"debug_edges.png", edges)
+
     if mode == "horizontal":
         for y in range(height):
-            # Check if all pixels in the row are within the same range of RGB values and set state accordingly
-            if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < euclidian_threshold for x in
-                   range(width)):
-                current_state = "whitespace"
-            else:
-                current_state = "non-whitespace"
-            # Detect and save all state changes for future analysis
+            edge_count = np.count_nonzero(edges[y, :])
+            current_state = "whitespace" if edge_count < edge_threshold else "non-whitespace"
+
             if previous_state is None:
                 previous_state = current_state
-            if previous_state is not None and previous_state != current_state:
+            if previous_state != current_state:
                 state_changes.append((y, previous_state, current_state))
-            previous_state = current_state
-    # For vertical analysis, scan chunks of data column by column
-    # (Limits the scope of the vertical scan to the horizontal data chunks only, not the entire image)
+                previous_state = current_state
+
     elif mode == "vertical":
         for i in range(len(horizontal_data_chunks)):
             y1, y2 = horizontal_data_chunks[i]
             previous_state = None
             for x in range(width):
-                # Check if all pixels in the col are within the same range of RGB values and set state accordingly
-                if all(euclidean_distance(img.getpixel((x, y)), img.getpixel((0, y))) < euclidian_threshold for y in
-                       range(y1, y2)):
-                    current_state = "whitespace"
-                else:
-                    current_state = "non-whitespace"
-                # Detect and save all state changes for future analysis
+                edge_count = np.count_nonzero(edges[y1:y2, x])
+                current_state = "whitespace" if edge_count < edge_threshold else "non-whitespace"
+
                 if previous_state is None:
                     previous_state = current_state
-                if previous_state is not None and previous_state != current_state:
+                if previous_state != current_state:
                     state_changes.append((x, y1, y2, previous_state, current_state))
-                previous_state = current_state
+                    previous_state = current_state
 
     return state_changes
 
@@ -115,28 +110,23 @@ def state_change_analysis(state_changes, mode):
 def horizontal_threshold_analysis(chunk_of_data, input_threshold):
     data_chunks = []
     threshold = input_threshold
-    y_start = 0
-    y_end = 0
 
+    if not chunk_of_data:
+        return data_chunks
+
+    y_start = chunk_of_data[0][0]
     for i in range(1, len(chunk_of_data)):
         prev_data_start, prev_data_end = chunk_of_data[i - 1]
         curr_data_start, curr_data_end = chunk_of_data[i]
-        if i == 1:
-            y_start = prev_data_start
 
-        # Determine if data chunks are close enough to each other based on threshold
         gap = curr_data_start - prev_data_end
-        if gap <= threshold:
-            continue
-        else:
+        if gap > threshold:
             y_end = prev_data_end
             data_chunks.append((y_start, y_end))
             y_start = curr_data_start
-        if i == len(chunk_of_data) - 1:
-            y_end = curr_data_end
-            data_chunks.append((y_start, y_end))
-    # Must account for the last one
-    y_end = curr_data_end
+
+    # Always add the final chunk
+    y_end = chunk_of_data[-1][1]
     data_chunks.append((y_start, y_end))
 
     return data_chunks
@@ -157,10 +147,10 @@ def vertical_threshold_analysis(vertical_chunk_of_data, input_threshold):
         prev_x1, prev_y1, prev_x2, prev_y2 = vertical_chunk_of_data[i - 1]
         curr_x1, curr_y1, curr_x2, curr_y2 = vertical_chunk_of_data[i]
 
-        if (i == 1):  # First data point is always the start of a zone
+        if i == 1:  # First data point is always the start of a zone
             zone_start = True
 
-        if (prev_y1 != curr_y1):  # or i == len(vertical_chunk_of_data) - 1)
+        if prev_y1 != curr_y1:  # or i == len(vertical_chunk_of_data) - 1)
             horizontal_row_complete = True
         else:
             horizontal_row_complete = False
@@ -211,18 +201,17 @@ def detect_content(img, section):
     width = section['width']
     height = section['height']
     # Crop the section from the image
-    section_img = img.crop((x, y, x + width, y + height))
-    # Convert section to openCV format
-    cv_image = cv2.cvtColor(np.array(section_img), cv2.COLOR_RGB2BGR)
+    section_img = img[y:y + height, x:x + width]
 
     # Check for barcodes
-    barcode = decode(section_img)
+    rgb_section = cv2.cvtColor(section_img, cv2.COLOR_BGR2RGB)
+    barcode = decode(rgb_section)
     if barcode:
         return "barcode: " + barcode[0].type, barcode[0].data.decode('utf-8')
 
     # Check for text with OCR
-    text = pytesseract.image_to_string(cv_image)
-    text = text if text else pytesseract.image_to_string(cv_image, config='--psm 10')
+    text = pytesseract.image_to_string(section_img)
+    text = text if text else pytesseract.image_to_string(section_img, config='--psm 10')
     if len(text.strip()) > 3:
         return "text", text
 
@@ -233,15 +222,11 @@ def detect_content(img, section):
 # Draw the section outlines based on JSON data
 def section_outlines(image_path, json_data_path, output_image_path):
     # Load the original image
-    img = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(img)
+    img = cv2.imread(image_path)
 
     # Load the JSON data
     with open(json_data_path, 'r') as json_file:
         data = json.load(json_file)
-
-    # Colors for drawing
-    red = (255, 0, 0)
 
     # Draw outlines for each section
     for section in data["document_sections"]:
@@ -251,19 +236,16 @@ def section_outlines(image_path, json_data_path, output_image_path):
         height = section["height"]
 
         # Draw outline
-        draw.line((x1, y1, x1 + width, y1), fill=red)  # Top line
-        draw.line((x1, y1 + height, x1 + width, y1 + height), fill=red)  # Bottom line
-        draw.line((x1, y1, x1, y1 + height), fill=red)  # Left line
-        draw.line((x1 + width, y1, x1 + width, y1 + height), fill=red)  # Right line
+        cv2.rectangle(img, (x1, y1), (x1 + width, y1 + height), (0, 0, 255), 2)
 
     # Save the image with outlines drawn
-    img.save(output_image_path)
+    cv2.imwrite(output_image_path, img)
 
 
 # Scan the image and produce a visual output of non-whitespace areas
 def image_scanner(image_path, output_json, horizontal_threshold, vertical_threshold, content_detection_toggle):
-    img = Image.open(image_path).convert("RGB")
-    original_img = Image.open(image_path).convert("RGB")
+    img = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    original_img = img.copy()
 
     # Determine the state changes in the horizontal direction
     state_changes = detect_state_changes(img, "horizontal")
@@ -351,12 +333,12 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
 
 
 initialize_scanner(
-    r"C:\Users\Mason\PycharmProjects\pythonProject7\cs-499 Test Cases\scan0002.jpg",
+    r"C:\Users\Mason\PycharmProjects\pythonProject7\cs-499 Test Cases\ClaimAcknowledgement.jpg",
     r"C:\Users\Mason\PycharmProjects\pythonProject7\results",
-    10,  # Horizontal threshold
-    50,  # Vertical threshold - 70 worked well
+    20,  # Horizontal threshold
+    40,  # Vertical threshold - 70 worked well
     0,  # Turn content detection on or off
-    0  # Turn section outline png output on or off
+    0  # Debugging: Turn on to output an outlined png
 )
 
 # Performance Monitoring
