@@ -210,8 +210,7 @@ def detect_content(img, section):
         return "barcode: " + barcode[0].type, barcode[0].data.decode('utf-8')
 
     # Check for text with OCR
-    text = pytesseract.image_to_string(section_img)
-    text = text if text else pytesseract.image_to_string(section_img, config='--psm 10')
+    text = pytesseract.image_to_string(section_img, config='--psm 6')
     if len(text.strip()) > 3:
         return "text", text
 
