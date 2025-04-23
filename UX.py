@@ -36,7 +36,7 @@ def Image_Scanner():
     file.save(filepath)
 
     # Now, call the ImageScanner.initialize_scanner method
-    result = ImageScanner.initialize_scanner(filepath, "./static", horizontal, vertical, 0)
+    result = ImageScanner.initialize_scanner(filepath, "./static", horizontal, vertical, 0,0)
 
     # You can return a result to be displayed or a success message
     return "Image Scanned Successfully"
