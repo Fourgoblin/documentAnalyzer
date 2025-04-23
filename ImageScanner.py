@@ -341,14 +341,14 @@ def initialize_scanner(input_file_path, output_file_path, horizontal_threshold, 
         print(f"Skipping: Unsupported file type → {input_file_path}")
 
 
-initialize_scanner(
-    r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\popular-types-of-barcodes.jpg",
-    r"C:\Users\Mason\PycharmProjects\pythonProject6\results",
-    20,  # Horizontal threshold
-    40,  # Vertical threshold - 70 worked well
-    0,  # Turn content detection on or off
-    0  # Debugging: Turn on to output an outlined png
-)
+# initialize_scanner(
+#     r"C:\Users\Mason\PycharmProjects\pythonProject6\cs-499 Test Cases\popular-types-of-barcodes.jpg",
+#     r"C:\Users\Mason\PycharmProjects\pythonProject6\results",
+#     20,  # Horizontal threshold
+#     40,  # Vertical threshold - 70 worked well
+#     0,  # Turn content detection on or off
+#     0  # Debugging: Turn on to output an outlined png
+# )
 
 # Performance Monitoring
 end_time = time.time()
