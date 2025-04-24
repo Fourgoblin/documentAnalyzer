@@ -5,6 +5,8 @@ import webbrowser
 import json
 
 
+# Ensure static directory exists at startup
+os.makedirs('static', exist_ok=True)
 
 app = Flask(__name__)
 
