@@ -18,8 +18,7 @@ horizontalSlider.oninput = function() {
     scanImage();
 }
 
-//verticalSlider.addEventListener('input', scanImage());
-//horizontalSlider.addEventListener('input', scanImage());
+
 let newPath = ""
 
 function scanImage() {
@@ -69,7 +68,6 @@ function uploadImage() {
         // Send the image data to Flask
         
         img.src = reader.result;
-        //img.src = "static/"+file.name;
         
         
     }
