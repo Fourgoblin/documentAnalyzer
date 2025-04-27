@@ -1,8 +1,8 @@
-let testData = {};
-let allSections = [];
+let sectionStorage = {};
+let allSections = []; //these are used for sharing info regarding each content section across functions as needed
 
 
-function deleteAllBoxes() {
+function deleteAllBoxes() { //function to delete all boxes, runs just before new boxes are created following image scan
   let boxes = document.getElementsByClassName("resizable");
   while (boxes.length > 0) {
     while(boxes[0].hasChildNodes()) {
@@ -15,7 +15,7 @@ function deleteAllBoxes() {
 }
 
 
-function storeAllSectionsData(sections) {
+function storeAllSectionsData(sections) { //function used to get data of all sections, used during JSON save process
  var sectionsArray = [];
 
   sections.forEach(section => {
@@ -35,8 +35,7 @@ function storeAllSectionsData(sections) {
 
 
 
-function saveJson() {
-    var i = 0;
+function saveJson() { //function to save any changes made to JSON generated from image scanner, collects data from all current resizable sections
     var document_sections = [];
     const resizables = document.getElementsByClassName("resizable");
     const resizeArray = Array.from(resizables);
@@ -45,8 +44,6 @@ function saveJson() {
       document_sections.push(data)
     });
 
-    // Specify the file path (you can change the file name and path as needed)
-    const filePath = 'static'+newPath;
 
     fetch('/save-json', {
       method: 'POST',
@@ -63,7 +60,7 @@ function saveJson() {
 }
 
 
-function makeResizableDiv(div) {
+function makeResizableDiv(div) { //function allowing for creation of resizable boxes, called whenever a new box must be made
   const elements = document.querySelectorAll(div); 
   elements.forEach(element => {
     
@@ -85,10 +82,10 @@ function makeResizableDiv(div) {
       original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
       parent_left = document.getElementById('image_holder').getBoundingClientRect().left;
       original_x = element.getBoundingClientRect().left;
-      original_x = parent_left - original_x; //relative to parent (image holder) now
+      original_x = parent_left - original_x; //alter value to be relative to div rather than full page
       parent_top = document.getElementById('image_holder').getBoundingClientRect().top;
       original_y = element.getBoundingClientRect().top;
-      original_y = parent_top - original_y; //also now relative to the image holder to prevent div offset from messing with box location
+      original_y = parent_top - original_y; 
       original_mouse_x = e.pageX;
       original_mouse_y = e.pageY;
       window.addEventListener('mousemove', resize)
@@ -96,7 +93,7 @@ function makeResizableDiv(div) {
     })
   
     
-    function resize(e) {
+    function resize(e) { //allows for actual resizing logic for each content box
       if (currentResizer.classList.contains('bottom-right')) {
         const width = original_width + (e.pageX - original_mouse_x);
         const height = original_height + (e.pageY - original_mouse_y)
@@ -115,7 +112,7 @@ function makeResizableDiv(div) {
         }
         if (width > minimum_size) {
           element.style.width = width + 'px'
-          element.style.left = (-1*original_x) + (e.pageX - original_mouse_x) + 'px' //this needs to subtract according to where the left actually starts (working)
+          element.style.left = (-1*original_x) + (e.pageX - original_mouse_x) + 'px' //Subtracting by original_x to account for location of div within page, same for other corners and height
         }
       }
       else if (currentResizer.classList.contains('top-right')) {
@@ -150,7 +147,7 @@ function makeResizableDiv(div) {
 });
 }
 
-function createResizeHTML() { //bug arises of multiple boxes being created with the same ID only if the box numbers get out of order (i.e if 1 and 3 exist it will get stuck making 2s as it always breaks at 2)
+function createResizeHTML() { //allows for creation of singular resizable box as needed, number of box will be lowest number not currently in use starting at 1
 
   var resizeList = document.getElementsByClassName("resizable"); //get current number of boxes
   var checkName = "";
@@ -158,7 +155,7 @@ function createResizeHTML() { //bug arises of multiple boxes being created with 
   var missingList = [];
   var i = 1;
   var missingNum = 0;
-  for(let resizable of resizeList) {
+  for(let resizable of resizeList) { //goes through all boxes to see which section #s are missing so they can be assigned later
     idList.push(resizable.id);
   }
   for (i; i <= idList.length; i += 1) {
@@ -186,9 +183,7 @@ function createResizeHTML() { //bug arises of multiple boxes being created with 
 
   
   checkName = "section_" + missingNum.toString();
-  var resizeCount = resizeList.length + 1; //add 1 to account for the new box being created, issue may arise if one is deleted and then created as number may be off/reused
-  var resizeCountStr = resizeCount.toString();
-
+  
   var div = document.createElement("div");
   div.setAttribute("class", "resizable");
   div.setAttribute('id', checkName);
@@ -221,25 +216,25 @@ function createResizeHTML() { //bug arises of multiple boxes being created with 
   makeResizableDiv('.resizable')
 }
 
-let lastClickedParent = null;
+let lastClickedParent = null; //used for tracking of which resizable div has been clicked last so it may be deleted, both parent and child must be tracked to ensure selection is correct and visualized
 let lastClickedChild = null;
 
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function(event) { //event listener for if the user clicks on a resizable box, last clicked box changes to purple, others will remain blue
   const clickedElement = event.target;
   const clickedParent = clickedElement.parentElement;
   if (clickedParent.classList.contains('resizable')) {
     if (lastClickedChild) {
-      lastClickedChild.style.border = "2px solid #4286f4"
+      lastClickedChild.style.border = "2px solid #4286f4" //sets child that had been selected before click back to blue
     }  
       
       lastClickedChild = clickedElement;
       lastClickedParent = clickedParent;
-      clickedElement.style.border = "2px solid #6821bf"
+      clickedElement.style.border = "2px solid #6821bf" //sets most recent clicked to purple
   }
 });
 
 
-function deleteResizeHTML() { //functions, but will need a way to choose which box to delete
+function deleteResizeHTML() { //allows for deletion of a single box by selecting the box that had been clicked last and removing it
 
   var childList = document.getElementById(lastClickedParent.id);
   while (childList.hasChildNodes()) {
@@ -250,16 +245,16 @@ function deleteResizeHTML() { //functions, but will need a way to choose which b
 }
 
 
-function createFromJson() {
+function createFromJson() { //function to generate boxes overlaying document based on result of image scanner
  
-  fetch("static/"+newPath).then(function (response) {
+  fetch("static/"+newPath).then(function (response) { //fetch json file with corresponding name to image
 
     return response.json();
   
   }).then(data => {
   
-    testData = data;
-    allSections = storeAllSectionsData(testData.document_sections);
+    sectionStorage = data;
+    allSections = storeAllSectionsData(sectionStorage.document_sections);
 
     var i = 1;
   allSections.forEach(section => {
