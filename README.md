@@ -120,7 +120,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Landon Kuerzi - email, Andrew Mortimer - email, Sharan Ravula - email, Jovani Rivas - email, Mason Zande - masonzande@live.com
+Landon Kuerzi - email, Andrew Mortimer - email, Sharan Ravula - email, Jovani Rivas - Jovanirivas14@gmail.com, Mason Zande - masonzande@live.com
 
 Project Link: [https://github.com/Fourgoblin/documentAnalyzer](https://github.com/Fourgoblin/documentAnalyzer)
 
