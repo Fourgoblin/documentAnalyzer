@@ -65,7 +65,10 @@ This project is being developed for OpenText by CS499 students at the University
 <!-- GETTING STARTED -->
 ## Getting Started
 
-For quickest setup simply download the executable from
+For quickest setup simply download the executable
+```sh
+https://github.com/Fourgoblin/documentAnalyzer/releases/tag/v1.5.3
+```
 
 
 ### Prerequisites
